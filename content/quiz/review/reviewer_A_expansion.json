@@ -1,0 +1,62 @@
+{
+  "reviewer": "A",
+  "scope": "expansion",
+  "reviewedAt": "2026-04-20",
+  "totalReviewed": 500,
+  "summary": {
+    "critical": 1,
+    "major": 2,
+    "minor": 3,
+    "noIssuesFound": 494
+  },
+  "issues": [
+    {
+      "questionId": "A170",
+      "severity": "critical",
+      "category": "factual_error",
+      "confidence": "high",
+      "description": "질문이 '문왕의 넷째 딸 무덤으로 고구려식 굴식돌방무덤 양식을 계승한 유적'을 묻고 답을 '정혜공주묘'로 제시하고 있으나, 정혜공주는 문왕의 둘째 딸이다(해설도 '정혜공주묘는 문왕의 둘째 딸 무덤'이라고 기술하여 자체 모순). 넷째 딸은 정효공주이며, 정효공주묘는 벽돌무덤이므로 답이 될 수 없다. 질문의 '넷째 딸'이 오기이다.",
+      "suggestedFix": "질문 수정: '문왕의 둘째 딸 무덤으로 고구려식 굴식돌방무덤 양식을 계승한 유적은?' (또는 '문왕의 딸 무덤으로 ~' 등으로 넷째/둘째 혼동을 제거)"
+    },
+    {
+      "questionId": "M154",
+      "severity": "major",
+      "category": "explanation_error",
+      "confidence": "medium",
+      "description": "국민대표회의(1923)의 분파에 대해 '창조파(신채호 등 새 정부 수립)와 개조파(안창호 등 기존 정부 개혁), 현상유지파(김구 등)로 분열'이라 설명했으나, 통상 교과서는 창조파와 개조파의 대립 구도로 서술하며, 김구는 회의 자체에 참여하지 않고 임시정부 고수를 주장한 '현상유지' 입장이었다. '현상유지파'를 공식 분파로 나열한 것과 김구를 대표로 든 것은 다소 부정확하다.",
+      "suggestedFix": "해설을 '창조파(신채호 등)와 개조파(안창호 등)로 대립하다 결렬되었고, 김구 등은 임시정부 고수를 주장하며 회의에 거리를 두었다'로 수정"
+    },
+    {
+      "questionId": "M163",
+      "severity": "major",
+      "category": "factual_error",
+      "confidence": "medium",
+      "description": "조선공산당이 '4차에 걸친 일제의 검거 사건(1925~1928)을 겪고 1928년 코민테른의 12월 테제에 따라 해체'되었다고 기술되어 있으나, 12월 테제는 1928년 12월에 발표되었고 조선공산당 자체는 4차 검거(1928) 이후 사실상 와해되었으며, 12월 테제는 재건 방향을 제시한 것이다. 1928년 해체라는 표현은 시기상 맞지만 '12월 테제에 따라 해체'라는 인과는 부정확하다.",
+      "suggestedFix": "해설을 '4차 검거 사건으로 조선공산당이 와해되었고, 코민테른은 1928년 12월 테제를 통해 이후 재건 방향을 제시하였다'로 수정"
+    },
+    {
+      "questionId": "G148",
+      "severity": "minor",
+      "category": "explanation_error",
+      "confidence": "high",
+      "description": "강화 천도 1232년부터 환도 1270년까지의 기간을 '약 39년간'으로 서술했으나 정확히는 38년이다. 1232-1270은 38년 차이.",
+      "suggestedFix": "'약 38년간의 강도(江都) 시대' 또는 '약 40년간'으로 표기"
+    },
+    {
+      "questionId": "G192",
+      "severity": "minor",
+      "category": "factual_error",
+      "confidence": "low",
+      "description": "복원궁을 '1115년 예종 때 개경에 세워진' 고려 최초의 도관으로 기술했으나, 복원궁 창건 연대는 일반적으로 예종 15년(1120)으로 전해진다. 1115년은 부정확할 수 있다.",
+      "suggestedFix": "'1120년(예종 15년) 개경에 세워진'으로 수정"
+    },
+    {
+      "questionId": "C056",
+      "severity": "minor",
+      "category": "explanation_error",
+      "confidence": "medium",
+      "description": "UN 한국임시위원단(UNTCOK)의 의장을 '인도 대표 크리슈나 메논'으로 서술했는데, 실제 의장은 K.P.S. 메논(Kumara Padmanabha Sivasankara Menon)이다. 인도 정치인 V.K. 크리슈나 메논(Krishna Menon)과 혼동될 수 있다.",
+      "suggestedFix": "'인도 대표 K.P.S. 메논(K.P.S. Menon)'으로 수정"
+    }
+  ]
+}

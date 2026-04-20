@@ -1,0 +1,58 @@
+{
+  "version": "2.0.0",
+  "language": "ko",
+  "topic": "한국사",
+  "totalQuestions": 1000,
+  "difficultyDistribution": {
+    "easy": 300,
+    "medium": 500,
+    "hard": 200
+  },
+  "eras": [
+    {
+      "era": "고대",
+      "prefix": "A",
+      "range": "선사시대 ~ 남북국시대",
+      "totalQuestions": 200,
+      "files": ["ancient.json", "ancient2.json"],
+      "idRanges": ["A001-A100", "A101-A200"],
+      "difficultyCount": { "easy": 60, "medium": 100, "hard": 40 }
+    },
+    {
+      "era": "고려",
+      "prefix": "G",
+      "range": "918 ~ 1392",
+      "totalQuestions": 200,
+      "files": ["goryeo.json", "goryeo2.json"],
+      "idRanges": ["G001-G100", "G101-G200"],
+      "difficultyCount": { "easy": 60, "medium": 100, "hard": 40 }
+    },
+    {
+      "era": "조선",
+      "prefix": "J",
+      "range": "1392 ~ 1863 (흥선대원군 집권 이전)",
+      "totalQuestions": 300,
+      "files": ["joseon.json", "joseon2.json"],
+      "idRanges": ["J001-J150", "J151-J300"],
+      "difficultyCount": { "easy": 90, "medium": 150, "hard": 60 }
+    },
+    {
+      "era": "근대",
+      "prefix": "M",
+      "range": "1876 (개항) ~ 1945 (광복)",
+      "totalQuestions": 200,
+      "files": ["modern.json", "modern2.json"],
+      "idRanges": ["M001-M100", "M101-M200"],
+      "difficultyCount": { "easy": 60, "medium": 100, "hard": 40 }
+    },
+    {
+      "era": "현대",
+      "prefix": "C",
+      "range": "1945 ~ 현재",
+      "totalQuestions": 100,
+      "files": ["contemporary.json", "contemporary2.json"],
+      "idRanges": ["C001-C050", "C051-C100"],
+      "difficultyCount": { "easy": 30, "medium": 50, "hard": 20 }
+    }
+  ]
+}

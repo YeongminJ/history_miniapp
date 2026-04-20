@@ -1,0 +1,65 @@
+{
+  "reviewedAt": "2026-04-20",
+  "scope": "기존 500문제 (A001-A100, G001-G100, J001-J150, M001-M100, C001-C050)",
+  "reviewers": ["A", "B"],
+  "method": "2명 독립 병렬 검수",
+  "summary": {
+    "reviewerA": { "critical": 0, "major": 2, "minor": 5, "noIssuesFound": 493 },
+    "reviewerB": { "critical": 0, "major": 1, "minor": 7, "noIssuesFound": 492 },
+    "consensus": "critical 오류 0건 — 출시 가능 수준",
+    "crossValidated": ["J080"],
+    "totalUniqueIssues": 13
+  },
+  "crossValidatedIssues": [
+    {
+      "questionId": "J080",
+      "severity": "minor",
+      "detectedBy": ["A", "B"],
+      "consensus": "장용영 설치 연도 표기 부정확. 실제 설치는 1788년(정조 12), 1793년은 내외영 체제 완비 시점",
+      "suggestedFix": "해설을 '1788년 장용위→장용영으로 확대·개편, 1793년 수원 외영 증설로 내외영 체제 완성'으로 수정"
+    }
+  ],
+  "reviewerAOnlyIssues": [
+    {
+      "questionId": "J100",
+      "severity": "major",
+      "category": "explanation_error",
+      "issue": "이익 육두(六蠹) 표기: '노비·과거·양반·사치·승려·유타' → 정확히는 '노비·과거·문벌(벌열)·기교·승니·유타'",
+      "recommendedAction": "수정"
+    },
+    {
+      "questionId": "J147",
+      "severity": "major",
+      "category": "explanation_error",
+      "issue": "비변사 상설화 시점 모호: 1555년 명종 을묘왜변 때 상설화, 임진왜란 이후 최고 기구화",
+      "recommendedAction": "해설 명확화"
+    },
+    { "questionId": "G036", "severity": "minor", "issue": "무신정권 집권자 순서 선지에 이의방 누락으로 모호", "recommendedAction": "선지 보완 권장" },
+    { "questionId": "G052", "severity": "minor", "issue": "탐라총관부 반환 연도 단순화(실제 1294년 반환 후 1301년 탐라만호부)", "recommendedAction": "경미" },
+    { "questionId": "G098", "severity": "minor", "issue": "태조 왕건 '천수' 연호 사용 기간 학설 차이", "recommendedAction": "경미" },
+    { "questionId": "A067", "severity": "minor", "issue": "재확인 결과 이상 없음", "recommendedAction": "무시" }
+  ],
+  "reviewerBOnlyIssues": [
+    {
+      "questionId": "G017",
+      "severity": "major",
+      "category": "factual_error",
+      "confidence": "high",
+      "issue": "강동 6주 해설에서 '구주' 표기 사용. 교과서·한능검 표준 표기는 '귀주(龜州)'이며, 동일 파일 G016의 '귀주대첩'과 표기 불일치",
+      "recommendedAction": "'구주' → '귀주'로 수정"
+    },
+    { "questionId": "A019", "severity": "minor", "issue": "'국보 제287호' 표기 → 2021년 국보 지정번호제 폐지로 번호 표기 삭제 권장", "recommendedAction": "표기 현대화" },
+    { "questionId": "A100", "severity": "minor", "issue": "'국보 제83호' 표기 동일 사유", "recommendedAction": "표기 현대화" },
+    { "questionId": "A065", "severity": "minor", "issue": "발해 무왕 재위 시작 연도 이설(718 vs 719)", "recommendedAction": "교과서 통설 유지 가능" },
+    { "questionId": "A098", "severity": "minor", "issue": "장보고 피살 연도 이설(841 삼국사기 vs 846 속일본후기)", "recommendedAction": "통설 유지" },
+    { "questionId": "G068", "severity": "minor", "issue": "진포대첩 '격파' → 정확히는 '소각'", "recommendedAction": "경미" },
+    { "questionId": "J010", "severity": "minor", "issue": "측우기 장영실 제작설은 후대 전승, 실록에는 세자(문종) 제안만 기록", "recommendedAction": "표현 완화 가능" }
+  ],
+  "priorityFixes": [
+    "J080 — 장용영 설치 연도 (A·B 양쪽 지적, 교정 확실)",
+    "J100 — 이익 육두 표기 (major, A 지적, 수능 기준 틀림)",
+    "J147 — 비변사 상설화 시점 (major, A 지적)",
+    "G017 — 강동 6주 '귀주' 표기 통일 (major, B 지적)"
+  ],
+  "conclusion": "critical 오류 0건. 교정 권고 이슈 13건 중 우선 수정 대상 4건(J080/J100/J147/G017). 나머지는 학설 이견·표기 현대화 수준으로 출시에 영향 없음. **전체 500문제 출시 가능 수준**."
+}
