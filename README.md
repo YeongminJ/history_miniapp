@@ -5,10 +5,19 @@
 ## 현재 상태
 
 - ✅ 개발환경 세팅 완료 (`ax` CLI + Claude Code MCP + 플러그인)
-- ✅ 한국사 퀴즈 콘텐츠 1,000문제 생성 + 이중 검수 완료
-- ⏳ 앱 스캐폴딩 대기 (기획 확정 중)
+- ✅ 한국사 퀴즈 콘텐츠 1,000문제 생성 + 이중 검수 완료 (critical/major 모두 교정)
+- ✅ 앱 스캐폴딩 완료 — `내가역사왕` (app/)
+- ⏳ UI 개발 착수 예정 (RPG 던전형 퀴즈)
 
 자세한 기획 내용은 [docs/PLANNING.md](./docs/PLANNING.md) 참조.
+
+## 개발 서버 실행
+
+```bash
+cd app
+npm run dev
+# 샌드박스 앱에서 intoss://my-history-king 으로 접속
+```
 
 ## 디렉토리 구조
 
@@ -16,7 +25,12 @@
 ait/
 ├── README.md                 # 이 파일
 ├── docs/
-│   └── PLANNING.md           # 기획 문서 (결정 사항·미결정 사항)
+│   └── PLANNING.md           # 기획 문서 (결정 사항·결정 로그)
+├── app/                      # Apps-in-Toss 웹 미니앱 (내가역사왕)
+│   ├── package.json
+│   ├── granite.config.ts
+│   ├── src/
+│   └── docs/skills/          # apps-in-toss, tds-mobile 문서
 └── content/
     └── quiz/                 # 한국사 퀴즈 1,000문제
         ├── ancient.json      # 고대 100

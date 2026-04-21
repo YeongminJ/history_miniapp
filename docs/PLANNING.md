@@ -119,14 +119,28 @@
 - Claude Code MCP 서버 `apps-in-toss` 연동 — `claude mcp add --transport stdio apps-in-toss ax mcp start`
 - Claude Code 플러그인 `knowledge-skills@apps-in-toss-skills` 설치 완료
 
-## 9. 미결정 사항 (Scaffolding 착수 전)
+## 9. 확정 사항 (2026-04-21)
 
-- [ ] MVP v0.1 기능 최종 확정
-- [ ] 프로젝트 이름 선정
-- [ ] v0.1 추가 게임 모드 여부 (A/B/C 또는 기본 모드만)
-- [ ] Git 원격 저장소 주소
+- **프로젝트 이름**: **내가역사왕** (appName: `my-history-king`)
+- **앱 카테고리**: 비게임 유틸앱(학습) + 게임 인터랙션 (TDS 베이스)
+- **MVP v0.1 범위**: 홈 / 기본 게임 모드(타이머 10초 + HP 3 + 콤보) / 4지선다 + 해설 토글 / 결과 화면(해설 중심) / 로컬 저장
+- **UX 방향**: **RPG 던전형** — 인물·상황이 등장해 말풍선으로 출제, 정답=적 데미지, 오답=내 HP 차감. 시대별 챕터(맵) → 방 → 보스.
+- **추가 게임 모드 (Q3)**: 보류 (v0.1 이후 결정)
 
-## 10. 결정 로그
+## 10. 앱 스캐폴딩 (2026-04-21)
+
+- 위치: [app/](../app/)
+- 명령: `npx create-ait-app@latest app --inline --tds --skills --ai claude`
+- 스택:
+  - `@apps-in-toss/web-framework` v2.4.7
+  - `@toss/tds-mobile` v2.3.0 (+ `@toss/tds-mobile-ait` v2.3.0 Provider)
+  - React 18 + TypeScript + Vite 6 + Emotion 11
+  - 스킬 문서: [app/docs/skills/apps-in-toss.md](../app/docs/skills/apps-in-toss.md), [app/docs/skills/tds-mobile.md](../app/docs/skills/tds-mobile.md)
+- 설정: [granite.config.ts](../app/granite.config.ts) — appName `my-history-king`, displayName `내가역사왕`, primaryColor `#5D4037`
+- 개발 서버: `cd app && npm run dev` (기본 포트 5173)
+- 샌드박스 앱 접속: `intoss://my-history-king`
+
+## 11. 결정 로그
 
 | 일자 | 결정 | 비고 |
 |---|---|---|
@@ -135,3 +149,7 @@
 | 2026-04-20 | 무료 리소스 + AI 생성 범위로 한정 | |
 | 2026-04-20 | 한국사 1,000문제 생성 + 이중 검수 완료 | content/quiz/ |
 | 2026-04-20 | 플랫폼 = Web (@apps-in-toss/web-framework) | RN 대비 장점 명확 |
+| 2026-04-21 | 프로젝트 이름 = 내가역사왕 | appName=my-history-king |
+| 2026-04-21 | UX 방향 = RPG 던전형 퀴즈 | 인물 등장·말풍선 출제·HP 데미지 |
+| 2026-04-21 | MVP v0.1 범위 확정 | 홈/기본모드/해설/결과/로컬저장 |
+| 2026-04-21 | 앱 스캐폴딩 완료 (app/) | create-ait-app + TDS + Claude skills |
