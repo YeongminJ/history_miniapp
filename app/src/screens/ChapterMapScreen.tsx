@@ -1,46 +1,38 @@
 import { Top } from "@toss/tds-mobile";
 import { motion } from "framer-motion";
 import { ERAS, byEra } from "../data/quiz";
+import { STAGES_PER_ERA } from "../data/stages";
 import { useAppStore } from "../store/useAppStore";
-import { useGameStore } from "../store/useGameStore";
 import { useProgressStore } from "../store/useProgressStore";
-import type { Era } from "../types";
 
 export function ChapterMapScreen() {
   const goHome = useAppStore((s) => s.goHome);
-  const startBattle = useGameStore((s) => s.startBattle);
-  const startChapter = useAppStore((s) => s.startChapter);
-  const progress = useProgressStore((s) => s.byEra);
-
-  const enter = (era: Era) => {
-    startBattle(era);
-    startChapter(era);
-  };
+  const selectEra = useAppStore((s) => s.selectEra);
+  const clearedStages = useProgressStore((s) => s.clearedStages);
 
   return (
     <div style={{ paddingBottom: 40 }}>
       <Top
-        title={<Top.TitleParagraph size={22}>챕터를 선택하세요</Top.TitleParagraph>}
+        title={
+          <Top.TitleParagraph size={22}>시대를 선택하세요</Top.TitleParagraph>
+        }
         subtitleBottom={
           <Top.SubtitleParagraph size={15}>
-            각 시대의 역사 인물이 기다리고 있어요
+            각 시대마다 5개 스테이지가 준비돼 있어요
           </Top.SubtitleParagraph>
         }
       />
 
       <div style={{ padding: "8px 20px 20px" }}>
         {ERAS.map((e, idx) => {
-          const stat = progress[e.era];
+          const cleared = (clearedStages[e.era] ?? []).length;
           const poolSize = byEra[e.era].length;
-          const accuracy =
-            stat.played > 0
-              ? Math.round((stat.correct / stat.played) * 100)
-              : null;
+          const pct = Math.round((cleared / STAGES_PER_ERA) * 100);
           return (
             <motion.button
               key={e.era}
               type="button"
-              onClick={() => enter(e.era)}
+              onClick={() => selectEra(e.era)}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.06, duration: 0.3 }}
@@ -71,14 +63,32 @@ export function ChapterMapScreen() {
                 <div style={{ fontSize: 12, opacity: 0.85 }}>{e.range}</div>
                 <div
                   style={{
-                    fontSize: 11,
-                    opacity: 0.75,
-                    marginTop: 6,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 8,
                   }}
                 >
-                  문제 {poolSize}개
-                  {accuracy !== null ? ` · 정답률 ${accuracy}%` : ""}
-                  {stat.bestScore > 0 ? ` · 최고 ${stat.bestScore}` : ""}
+                  <div
+                    style={{
+                      flex: 1,
+                      height: 5,
+                      background: "rgba(255,255,255,0.25)",
+                      borderRadius: 999,
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${pct}%`,
+                        background: "#FFFFFF",
+                      }}
+                    />
+                  </div>
+                  <div style={{ fontSize: 11, opacity: 0.9, minWidth: 50 }}>
+                    {cleared}/{STAGES_PER_ERA} ({poolSize}문제)
+                  </div>
                 </div>
               </div>
               <div style={{ fontSize: 20, opacity: 0.7 }}>›</div>

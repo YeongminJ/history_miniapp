@@ -15,10 +15,13 @@ interface ProgressState {
   totalCorrect: number;
   totalScore: number;
   byEra: Record<Era, EraStats>;
+  clearedStages: Record<Era, number[]>;
   clearedIds: string[];
 
   recordChapter: (args: {
     era: Era;
+    stageIndex: number;
+    cleared: boolean;
     answeredIds: string[];
     correctCount: number;
     score: number;
@@ -44,9 +47,23 @@ export const useProgressStore = create<ProgressState>()(
         근대: emptyEraStats(),
         현대: emptyEraStats(),
       },
+      clearedStages: {
+        고대: [],
+        고려: [],
+        조선: [],
+        근대: [],
+        현대: [],
+      },
       clearedIds: [],
 
-      recordChapter: ({ era, answeredIds, correctCount, score }) => {
+      recordChapter: ({
+        era,
+        stageIndex,
+        cleared,
+        answeredIds,
+        correctCount,
+        score,
+      }) => {
         const state = get();
         const today = todayKey();
         const yesterday = new Date(Date.now() - 86_400_000)
@@ -61,6 +78,11 @@ export const useProgressStore = create<ProgressState>()(
 
         const eraStats = state.byEra[era];
         const mergedIds = new Set([...state.clearedIds, ...answeredIds]);
+        const prevCleared = state.clearedStages[era] ?? [];
+        const nextCleared =
+          cleared && !prevCleared.includes(stageIndex)
+            ? [...prevCleared, stageIndex].sort((a, b) => a - b)
+            : prevCleared;
 
         set({
           streak: nextStreak,
@@ -76,12 +98,16 @@ export const useProgressStore = create<ProgressState>()(
               bestScore: Math.max(eraStats.bestScore, score),
             },
           },
+          clearedStages: {
+            ...state.clearedStages,
+            [era]: nextCleared,
+          },
           clearedIds: [...mergedIds],
         });
       },
     }),
     {
-      name: "history-king-progress-v1",
+      name: "history-king-progress-v2",
     },
   ),
 );

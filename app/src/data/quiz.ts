@@ -9,6 +9,9 @@ import modern2 from "../../../content/quiz/modern2.json";
 import contemporary from "../../../content/quiz/contemporary.json";
 import contemporary2 from "../../../content/quiz/contemporary2.json";
 import type { Difficulty, Era, EraFile, Question } from "../types";
+import type { StageDef } from "./stages";
+
+const DIFFICULTY_ORDER: Difficulty[] = ["easy", "medium", "hard"];
 
 const rawFiles = [
   ancient,
@@ -72,4 +75,29 @@ export function pickQuestions(
   );
   const shuffled = [...pool].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
+}
+
+/**
+ * 스테이지의 난이도 프로필에 맞춰 문제를 선정하고,
+ * 쉬움 → 보통 → 어려움 순서로 정렬해 반환.
+ */
+export function pickStageQuestions(
+  era: Era,
+  stage: StageDef,
+): Question[] {
+  const picked: Question[] = [];
+  const used = new Set<string>();
+  for (const difficulty of DIFFICULTY_ORDER) {
+    const count = stage.profile[difficulty];
+    if (count <= 0) continue;
+    const chunk = pickQuestions(era, difficulty, count, used);
+    chunk.forEach((q) => used.add(q.id));
+    picked.push(...chunk);
+  }
+  // difficulty 기준 안정 정렬 (easy→medium→hard)
+  return picked.sort(
+    (a, b) =>
+      DIFFICULTY_ORDER.indexOf(a.difficulty) -
+      DIFFICULTY_ORDER.indexOf(b.difficulty),
+  );
 }

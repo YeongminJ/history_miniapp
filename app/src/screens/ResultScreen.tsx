@@ -1,14 +1,24 @@
 import { Button, Top } from "@toss/tds-mobile";
 import { useEffect, useRef, useState } from "react";
+import { ERA_THEME } from "../data/bosses";
+import {
+  STAGE_DEFS,
+  getStage,
+  isStageUnlocked,
+  stageTitle,
+} from "../data/stages";
 import { useAppStore } from "../store/useAppStore";
 import { useGameStore } from "../store/useGameStore";
 import { useProgressStore } from "../store/useProgressStore";
+import type { Question } from "../types";
 
 export function ResultScreen() {
-  const { era, answers, score, reset } = useGameStore();
+  const { era, stageIndex, answers, score, reset } = useGameStore();
   const goHome = useAppStore((s) => s.goHome);
-  const navigate = useAppStore((s) => s.navigate);
+  const backToStages = useAppStore((s) => s.backToStages);
+  const selectStage = useAppStore((s) => s.selectStage);
   const recordChapter = useProgressStore((s) => s.recordChapter);
+  const clearedStages = useProgressStore((s) => s.clearedStages);
   const recorded = useRef(false);
   const [showAllExplanations, setShowAllExplanations] = useState(false);
 
@@ -17,11 +27,16 @@ export function ResultScreen() {
     answers.length > 0 ? Math.round((correctCount / answers.length) * 100) : 0;
   const wrongAnswers = answers.filter((a) => !a.correct);
 
+  const stage = era ? getStage(stageIndex) : null;
+  const cleared = !!stage && correctCount >= stage.minCorrectToClear;
+
   useEffect(() => {
     if (recorded.current) return;
     if (!era || answers.length === 0) return;
     recordChapter({
       era,
+      stageIndex,
+      cleared,
       answeredIds: answers.map((a) => a.question.id),
       correctCount,
       score,
@@ -30,6 +45,11 @@ export function ResultScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleBack = () => {
+    reset();
+    backToStages();
+  };
+
   const handleHome = () => {
     reset();
     goHome();
@@ -37,25 +57,50 @@ export function ResultScreen() {
 
   const handleRetry = () => {
     if (!era) return;
-    useGameStore.getState().startBattle(era);
-    navigate("battle");
+    useGameStore.getState().startBattle(era, stageIndex);
+    selectStage(stageIndex);
   };
+
+  const handleNextStage = () => {
+    if (!era) return;
+    const nextIdx = stageIndex + 1;
+    if (nextIdx >= STAGE_DEFS.length) {
+      handleBack();
+      return;
+    }
+    // recordChapter 이후 clearedStages가 갱신되었어야 하므로 즉시 다음 스테이지 시작
+    useGameStore.getState().startBattle(era, nextIdx);
+    selectStage(nextIdx);
+  };
+
+  const theme = era ? ERA_THEME[era] : null;
+
+  const nextUnlocked =
+    era && stage
+      ? stageIndex + 1 < STAGE_DEFS.length &&
+        (cleared || isStageUnlocked(era, stageIndex + 1, clearedStages))
+      : false;
+
+  if (!era || !stage) {
+    return (
+      <div style={{ padding: 40, textAlign: "center" }}>
+        <p>결과를 불러올 수 없어요.</p>
+        <Button onClick={handleHome}>홈으로</Button>
+      </div>
+    );
+  }
 
   return (
     <div style={{ paddingBottom: 120 }}>
       <Top
         title={
           <Top.TitleParagraph size={22}>
-            {correctCount === answers.length && answers.length > 0
-              ? "완벽 정복!"
-              : correctCount > 0
-                ? "전투 종료"
-                : "아쉬운 패배"}
+            {cleared ? "스테이지 클리어!" : "클리어 실패"}
           </Top.TitleParagraph>
         }
         subtitleBottom={
           <Top.SubtitleParagraph size={15}>
-            {era} 챕터 · {correctCount} / {answers.length} 정답
+            {era} · {stageTitle(stage)} · {correctCount} / {answers.length} 정답
           </Top.SubtitleParagraph>
         }
       />
@@ -63,23 +108,27 @@ export function ResultScreen() {
       <div style={{ padding: "8px 20px 20px" }}>
         <div
           style={{
-            background:
-              correctCount === answers.length
-                ? "linear-gradient(135deg, #43A047 0%, #2E7D32 100%)"
-                : "linear-gradient(135deg, #5D4037 0%, #3E2723 100%)",
+            background: cleared
+              ? `linear-gradient(135deg, ${theme?.accent}BB 0%, ${theme?.accent}77 100%)`
+              : "linear-gradient(135deg, #616161 0%, #424242 100%)",
             borderRadius: 20,
             padding: 24,
             color: "#FFFFFF",
             marginBottom: 16,
             textAlign: "center",
+            boxShadow: cleared
+              ? `0 4px 24px ${theme?.frameGlow ?? "transparent"}`
+              : undefined,
           }}
         >
           <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 6 }}>
-            획득 점수
+            {cleared ? "✦ VICTORY ✦" : "클리어 조건"}
           </div>
-          <div style={{ fontSize: 48, fontWeight: 800 }}>{score}</div>
-          <div style={{ fontSize: 13, opacity: 0.8, marginTop: 4 }}>
-            정답률 {accuracy}%
+          <div style={{ fontSize: 48, fontWeight: 900 }}>{score}</div>
+          <div style={{ fontSize: 13, opacity: 0.85, marginTop: 4 }}>
+            {cleared
+              ? `정답률 ${accuracy}%`
+              : `정답 ${correctCount}/${stage.minCorrectToClear}개 필요 · 정답률 ${accuracy}%`}
           </div>
         </div>
 
@@ -137,7 +186,7 @@ export function ResultScreen() {
           </div>
         )}
 
-        {answers.length > 0 && wrongAnswers.length === 0 ? null : (
+        {wrongAnswers.length === 0 ? null : (
           <details
             style={{
               marginBottom: 16,
@@ -171,19 +220,46 @@ export function ResultScreen() {
           </details>
         )}
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <Button
-            size="xlarge"
-            display="full"
-            variant="weak"
-            color="dark"
-            onClick={handleHome}
-          >
-            홈으로
-          </Button>
-          <Button size="xlarge" display="full" onClick={handleRetry}>
-            다시 도전
-          </Button>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+          }}
+        >
+          {cleared && nextUnlocked ? (
+            <Button
+              size="xlarge"
+              display="full"
+              onClick={handleNextStage}
+            >
+              다음 스테이지로 ▶
+            </Button>
+          ) : (
+            <Button size="xlarge" display="full" onClick={handleRetry}>
+              다시 도전
+            </Button>
+          )}
+          <div style={{ display: "flex", gap: 10 }}>
+            <Button
+              size="large"
+              display="full"
+              variant="weak"
+              color="dark"
+              onClick={handleBack}
+            >
+              스테이지 목록
+            </Button>
+            <Button
+              size="large"
+              display="full"
+              variant="weak"
+              color="dark"
+              onClick={handleHome}
+            >
+              홈으로
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -195,7 +271,7 @@ function ReviewCard({
   selected,
   expanded,
 }: {
-  q: import("../types").Question;
+  q: Question;
   selected: number | null;
   expanded: boolean;
 }) {
@@ -228,7 +304,8 @@ function ReviewCard({
         내 답: <span style={{ color: "#C62828" }}>{selectedText}</span>
       </div>
       <div style={{ fontSize: 13, color: "#616161", marginBottom: 8 }}>
-        정답: <span style={{ color: "#2E7D32", fontWeight: 700 }}>{correctText}</span>
+        정답:{" "}
+        <span style={{ color: "#2E7D32", fontWeight: 700 }}>{correctText}</span>
       </div>
       {expanded ? (
         <div

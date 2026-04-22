@@ -1,19 +1,29 @@
-import { Button } from "@toss/tds-mobile";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { BattleIntro } from "../components/BattleIntro";
+import { BattleOutro } from "../components/BattleOutro";
 import { ChoiceButton } from "../components/ChoiceButton";
 import { ComboBadge } from "../components/ComboBadge";
-import { EnemyFigure } from "../components/EnemyFigure";
-import { HPBar } from "../components/HPBar";
+import { DungeonBackground } from "../components/DungeonBackground";
+import { EnemyPortrait } from "../components/EnemyPortrait";
+import { FloatingDamage } from "../components/FloatingDamage";
+import { RoomProgress } from "../components/RoomProgress";
+import { SegmentedHPBar } from "../components/SegmentedHPBar";
 import { SpeechBubble } from "../components/SpeechBubble";
 import { Timer } from "../components/Timer";
+import { ERA_THEME } from "../data/bosses";
+import { STAGE_DEFS, stageTitle } from "../data/stages";
 import { useAppStore } from "../store/useAppStore";
 import { GAME_CONSTANTS, useGameStore } from "../store/useGameStore";
+
+type Phase = "intro" | "fighting" | "outro";
 
 export function BattleScreen() {
   const navigate = useAppStore((s) => s.navigate);
   const {
     era,
+    stageIndex,
+    bossName,
     questions,
     currentIndex,
     playerHP,
@@ -22,35 +32,48 @@ export function BattleScreen() {
     combo,
     revealed,
     selectedIndex,
+    lastResolution,
     answer,
     next,
   } = useGameStore();
 
-  const question = questions[currentIndex];
-  const questionStart = useRef<number>(performance.now());
+  const [phase, setPhase] = useState<Phase>("intro");
   const [hitKey, setHitKey] = useState(0);
   const [missKey, setMissKey] = useState(0);
+  const [flashKey, setFlashKey] = useState(0);
+  const [shakeKey, setShakeKey] = useState(0);
+  const questionStart = useRef<number>(performance.now());
+
+  const theme = era ? ERA_THEME[era] : null;
 
   useEffect(() => {
     questionStart.current = performance.now();
   }, [currentIndex]);
 
-  const isChapterEnd = useMemo(() => {
-    if (!question) return true;
+  const question = questions[currentIndex];
+  const chapterDone = useMemo(() => {
+    if (questions.length === 0) return false;
     if (playerHP <= 0) return true;
     if (enemyHP <= 0) return true;
     if (currentIndex >= questions.length) return true;
     return false;
-  }, [question, playerHP, enemyHP, currentIndex, questions.length]);
+  }, [playerHP, enemyHP, currentIndex, questions.length]);
+
+  // 챕터 종료 → outro → result
+  useEffect(() => {
+    if (phase !== "fighting") return;
+    if (!chapterDone) return;
+    const outroTimer = setTimeout(() => setPhase("outro"), 450);
+    return () => clearTimeout(outroTimer);
+  }, [chapterDone, phase]);
 
   useEffect(() => {
-    if (isChapterEnd && questions.length > 0) {
-      const t = setTimeout(() => navigate("result"), 900);
-      return () => clearTimeout(t);
-    }
-  }, [isChapterEnd, questions.length, navigate]);
+    if (phase !== "outro") return;
+    const t = setTimeout(() => navigate("result"), 1600);
+    return () => clearTimeout(t);
+  }, [phase, navigate]);
 
-  if (!question || !era) {
+  if (!era || !theme || !bossName) {
     return (
       <div style={{ padding: 40, textAlign: "center" }}>
         <p>전투를 준비 중입니다…</p>
@@ -59,11 +82,16 @@ export function BattleScreen() {
   }
 
   const handleAnswer = (idx: number | null) => {
-    if (revealed) return;
+    if (revealed || phase !== "fighting") return;
     const elapsed = performance.now() - questionStart.current;
-    const correct = idx !== null && idx === question.answerIndex;
-    if (correct) setHitKey((k) => k + 1);
-    else setMissKey((k) => k + 1);
+    const correct = idx !== null && idx === question?.answerIndex;
+    if (correct) {
+      setHitKey((k) => k + 1);
+    } else {
+      setMissKey((k) => k + 1);
+      setFlashKey((k) => k + 1);
+      setShakeKey((k) => k + 1);
+    }
     answer(idx, elapsed);
   };
 
@@ -73,149 +101,252 @@ export function BattleScreen() {
   };
 
   const choiceState = (idx: number) => {
-    if (!revealed) return "idle" as const;
+    if (!revealed || !question) return "idle" as const;
     if (idx === question.answerIndex) return "correct" as const;
     if (idx === selectedIndex && selectedIndex !== question.answerIndex)
       return "wrong" as const;
     return "dimmed" as const;
   };
 
+  const victory = playerHP > 0 && enemyHP <= 0;
+  const fightingReady = phase === "fighting" && question != null;
+
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "linear-gradient(180deg, #FAFAFA 0%, #F5F5F5 100%)",
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div style={{ padding: "16px 20px 8px" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 8,
-          }}
-        >
-          <div style={{ fontSize: 12, color: "#757575", fontWeight: 600 }}>
-            {era} · {currentIndex + 1} / {questions.length}
-          </div>
-          <ComboBadge combo={combo} />
-        </div>
-        <HPBar current={enemyHP} max={enemyMaxHP} label="🗡 적 HP" />
-      </div>
-
+    <DungeonBackground era={era} shakeKey={shakeKey} flashKey={flashKey}>
       <div
         style={{
-          padding: "16px 20px 8px",
+          minHeight: "100vh",
           display: "flex",
           flexDirection: "column",
-          alignItems: "center",
         }}
       >
-        <EnemyFigure era={era} hitKey={hitKey} missKey={missKey} />
-        <div style={{ width: "100%", marginTop: 8 }}>
-          <SpeechBubble period={question.period}>
-            {question.question}
-          </SpeechBubble>
-        </div>
-      </div>
-
-      <div style={{ padding: "8px 20px" }}>
-        <Timer
-          durationMs={GAME_CONSTANTS.QUESTION_TIME_MS}
-          running={!revealed}
-          onExpire={() => handleAnswer(null)}
-          resetKey={currentIndex}
-        />
-      </div>
-
-      <div
-        style={{
-          padding: "8px 20px 16px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          flex: 1,
-        }}
-      >
-        {question.choices.map((c, i) => (
-          <ChoiceButton
-            key={i}
-            index={i}
-            label={c}
-            state={choiceState(i)}
-            disabled={revealed}
-            onClick={() => handleAnswer(i)}
-          />
-        ))}
-      </div>
-
-      <AnimatePresence>
-        {revealed ? (
-          <motion.div
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 20, opacity: 0 }}
-            transition={{ duration: 0.25 }}
+        <div style={{ padding: "60px 20px 8px" }}>
+          <div
             style={{
-              background: "#FFFFFF",
-              borderTop: "1.5px solid #EEEEEE",
-              padding: "16px 20px 24px",
-              boxShadow: "0 -4px 20px rgba(0,0,0,0.05)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 10,
+              color: "#FFFFFF",
             }}
           >
-            <ExplanationBlock
-              correct={selectedIndex === question.answerIndex}
-              explanation={question.explanation}
-            />
-            <div style={{ marginTop: 12 }}>
-              <Button size="xlarge" display="full" onClick={handleNext}>
-                {currentIndex + 1 < questions.length &&
-                playerHP > (selectedIndex === question.answerIndex ? -1 : 1) &&
-                enemyHP > (selectedIndex === question.answerIndex ? 1 : 0)
-                  ? "다음"
-                  : "결과 보기"}
-              </Button>
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: 1,
+                opacity: 0.85,
+              }}
+            >
+              {era} · {stageTitle(STAGE_DEFS[stageIndex])}
             </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+            <RoomProgress
+              total={questions.length || 5}
+              current={currentIndex}
+              accent={theme.accent}
+            />
+            <div style={{ minWidth: 60, textAlign: "right" }}>
+              <ComboBadge combo={combo} />
+            </div>
+          </div>
 
-      <div style={{ padding: "0 20px 12px" }}>
-        <HPBar
-          current={playerHP}
-          max={GAME_CONSTANTS.MAX_PLAYER_HP}
-          label="❤️ 내 HP"
-          color="#43A047"
-          small
+          <SegmentedHPBar
+            current={enemyHP}
+            max={enemyMaxHP}
+            label="🗡 적 HP"
+            activeColor={theme.accent}
+          />
+        </div>
+
+        <div
+          style={{
+            padding: "8px 20px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            position: "relative",
+          }}
+        >
+          <EnemyPortrait
+            era={era}
+            name={bossName}
+            hitKey={hitKey}
+            missKey={missKey}
+            critical={lastResolution?.critical}
+          />
+
+          {/* 플로팅 데미지 */}
+          {lastResolution ? (
+            <FloatingDamage
+              show={revealed}
+              value={
+                lastResolution.correct ? lastResolution.damage : 1
+              }
+              kind={
+                lastResolution.correct
+                  ? "damage"
+                  : selectedIndex === null
+                    ? "miss"
+                    : "hp-loss"
+              }
+              critical={lastResolution.critical}
+              stamp={lastResolution.stamp}
+            />
+          ) : null}
+
+          {question ? (
+            <div style={{ width: "100%" }}>
+              <SpeechBubble period={question.period} accent={theme.accent}>
+                {question.question}
+              </SpeechBubble>
+            </div>
+          ) : null}
+        </div>
+
+        {question && fightingReady ? (
+          <div style={{ padding: "12px 20px 0" }}>
+            <Timer
+              durationMs={GAME_CONSTANTS.QUESTION_TIME_MS}
+              running={!revealed}
+              onExpire={() => handleAnswer(null)}
+              resetKey={currentIndex}
+            />
+          </div>
+        ) : null}
+
+        <div
+          style={{
+            padding: "12px 20px 16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
+            flex: 1,
+          }}
+        >
+          {question?.choices.map((c, i) => (
+            <ChoiceButton
+              key={i}
+              index={i}
+              label={c}
+              state={choiceState(i)}
+              disabled={revealed || !fightingReady}
+              onClick={() => handleAnswer(i)}
+              accent={theme.accent}
+            />
+          ))}
+        </div>
+
+        {/* 하단 내 HP */}
+        <div style={{ padding: "0 20px 16px" }}>
+          <SegmentedHPBar
+            current={playerHP}
+            max={GAME_CONSTANTS.MAX_PLAYER_HP}
+            label="❤️ 내 HP"
+            activeColor="#66BB6A"
+          />
+        </div>
+
+        {/* 해설 하단 바텀시트 */}
+        <AnimatePresence>
+          {revealed && question ? (
+            <motion.div
+              initial={{ y: 80, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 240, damping: 24 }}
+              style={{
+                background: "#FFFFFF",
+                borderTop: `2px solid ${theme.accent}`,
+                padding: "18px 20px 28px",
+                boxShadow: "0 -8px 28px rgba(0,0,0,0.35)",
+                color: "#212121",
+              }}
+            >
+              <ExplanationBlock
+                correct={selectedIndex === question.answerIndex}
+                explanation={question.explanation}
+                accent={theme.accent}
+              />
+              <div style={{ marginTop: 14 }}>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  style={{
+                    width: "100%",
+                    padding: "14px",
+                    borderRadius: 12,
+                    background: theme.nameBg,
+                    color: "#FFFFFF",
+                    border: `1.5px solid ${theme.accent}`,
+                    fontSize: 15,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                    letterSpacing: 1,
+                    boxShadow: `0 0 14px ${theme.frameGlow}`,
+                  }}
+                >
+                  {currentIndex + 1 >= questions.length ||
+                  playerHP <= 0 ||
+                  enemyHP <= 0
+                    ? "⚔ 챕터 종료"
+                    : "다음 방 ▶"}
+                </button>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        <BattleIntro
+          era={era}
+          bossName={bossName}
+          visible={phase === "intro"}
+          onDone={() => setPhase("fighting")}
         />
+        <BattleOutro visible={phase === "outro"} victory={victory} />
       </div>
-    </div>
+    </DungeonBackground>
   );
 }
 
 function ExplanationBlock({
   correct,
   explanation,
+  accent,
 }: {
   correct: boolean;
   explanation: string;
+  accent: string;
 }) {
   return (
     <div>
       <div
         style={{
-          fontSize: 14,
+          display: "inline-block",
+          padding: "4px 12px",
+          borderRadius: 999,
+          fontSize: 12,
           fontWeight: 800,
-          color: correct ? "#2E7D32" : "#C62828",
-          marginBottom: 6,
+          letterSpacing: 1,
+          color: "#FFFFFF",
+          background: correct ? "#43A047" : "#E53935",
+          marginBottom: 10,
         }}
       >
-        {correct ? "✔ 정답!" : "✘ 오답"}
+        {correct ? "✦ 적중! " : "✘ 빗나감 "}
       </div>
-      <div style={{ fontSize: 14, color: "#424242", lineHeight: 1.6 }}>
+      <div
+        style={{
+          fontSize: 13,
+          color: "#616161",
+          marginBottom: 6,
+          fontWeight: 700,
+          borderLeft: `3px solid ${accent}`,
+          paddingLeft: 10,
+        }}
+      >
+        📖 해설
+      </div>
+      <div style={{ fontSize: 14, color: "#424242", lineHeight: 1.65 }}>
         {explanation}
       </div>
     </div>

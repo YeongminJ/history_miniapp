@@ -4,15 +4,23 @@ import type { Era, Screen } from "../types";
 interface AppState {
   screen: Screen;
   selectedEra: Era | null;
+  selectedStageIndex: number;
   navigate: (screen: Screen) => void;
-  startChapter: (era: Era) => void;
+  selectEra: (era: Era) => void;
+  selectStage: (stageIndex: number) => void;
   goHome: () => void;
+  backToStages: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   screen: "home",
   selectedEra: null,
+  selectedStageIndex: 0,
   navigate: (screen) => set({ screen }),
-  startChapter: (era) => set({ selectedEra: era, screen: "battle" }),
-  goHome: () => set({ screen: "home", selectedEra: null }),
+  selectEra: (era) => set({ selectedEra: era, screen: "stage" }),
+  selectStage: (stageIndex) =>
+    set({ selectedStageIndex: stageIndex, screen: "battle" }),
+  goHome: () =>
+    set({ screen: "home", selectedEra: null, selectedStageIndex: 0 }),
+  backToStages: () => set({ screen: "stage" }),
 }));

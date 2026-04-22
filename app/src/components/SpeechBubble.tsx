@@ -4,48 +4,51 @@ import type { ReactNode } from "react";
 interface Props {
   children: ReactNode;
   period?: string;
+  accent: string;
 }
 
-export function SpeechBubble({ children, period }: Props) {
+export function SpeechBubble({ children, period, accent }: Props) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      initial={{ opacity: 0, y: 10, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35 }}
       style={{
         position: "relative",
-        background: "#FFFFFF",
-        border: "1.5px solid #E0E0E0",
-        borderRadius: 16,
-        padding: "16px 18px",
-        boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
-        marginTop: 18,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(240,240,245,0.97) 100%)",
+        border: `2px solid ${accent}`,
+        borderRadius: 18,
+        padding: "18px 20px",
+        boxShadow: `0 8px 24px rgba(0,0,0,0.45), 0 0 16px ${accent}33`,
+        marginTop: 20,
+        color: "#212121",
       }}
     >
       <div
         style={{
           position: "absolute",
-          top: -10,
+          top: -12,
           left: "50%",
           transform: "translateX(-50%) rotate(45deg)",
-          width: 16,
-          height: 16,
+          width: 18,
+          height: 18,
           background: "#FFFFFF",
-          borderLeft: "1.5px solid #E0E0E0",
-          borderTop: "1.5px solid #E0E0E0",
+          borderLeft: `2px solid ${accent}`,
+          borderTop: `2px solid ${accent}`,
         }}
       />
       {period ? (
         <div
           style={{
             fontSize: 11,
-            color: "#9E9E9E",
-            fontWeight: 600,
+            color: "#757575",
+            fontWeight: 700,
             marginBottom: 6,
-            letterSpacing: 0.4,
+            letterSpacing: 1,
           }}
         >
-          {period}
+          📜 {period}
         </div>
       ) : null}
       <div
@@ -53,7 +56,7 @@ export function SpeechBubble({ children, period }: Props) {
           fontSize: 16,
           lineHeight: 1.55,
           color: "#212121",
-          fontWeight: 600,
+          fontWeight: 700,
         }}
       >
         {children}
