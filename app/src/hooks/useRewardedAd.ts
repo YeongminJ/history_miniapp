@@ -7,18 +7,23 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * 보상형 광고 그룹 ID.
+ *
  * - 테스트용: `ait-ad-test-rewarded-id`
  *   (https://developers-apps-in-toss.toss.im/ads/develop.html#테스트하기)
- *   샌드박스/개발 환경에서 이 ID로 호출하면 토스 SDK가 실제 테스트 광고를
+ *   개발/샌드박스 환경에서 이 ID로 호출하면 토스 SDK가 실제 테스트 광고를
  *   서빙해줘요.
- * - 프로덕션: 앱인토스 콘솔에서 발급받은 ID를 `VITE_AD_GROUP_ID_REWARDED`
- *   환경변수로 주입 (app/.env.local 등). 프로덕션 빌드 + 토스 본앱에서만
- *   실제 광고로 사용돼요.
+ * - 프로덕션: 앱인토스 콘솔 → 수익화 → 인앱 광고에서 **리워드형**으로 발급한
+ *   광고 그룹 ID를 `PROD_AD_GROUP_ID`에 그대로 붙이면 돼요. 광고 그룹 ID는
+ *   공개 식별자라 git에 커밋해도 보안상 문제 없어요.
+ *
+ * 런타임에 다음 경우에는 **자동으로 테스트 ID**로 전환되어 실수로 개발 중
+ * 실광고가 노출되는 것을 막아줘요:
+ *   - Vite dev 빌드 (`npm run dev`)
+ *   - 앱인토스 샌드박스 환경 런타임
+ *   - `PROD_AD_GROUP_ID`가 빈 값일 때
  */
 const TEST_AD_GROUP_ID = "ait-ad-test-rewarded-id";
-const PROD_AD_GROUP_ID = import.meta.env.VITE_AD_GROUP_ID_REWARDED as
-  | string
-  | undefined;
+const PROD_AD_GROUP_ID = ""; // TODO: 콘솔에서 발급한 리워드 광고 그룹 ID 붙여넣기
 
 function resolveAdGroupId(): { id: string; isTest: boolean } {
   if (!PROD_AD_GROUP_ID) return { id: TEST_AD_GROUP_ID, isTest: true };
