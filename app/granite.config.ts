@@ -3,7 +3,7 @@ import { defineConfig } from "@apps-in-toss/web-framework/config";
 export default defineConfig({
   appName: "my-history-king",
   brand: {
-    displayName: "내가역사왕",
+    displayName: "역사왕",
     primaryColor: "#5D4037",
     icon: "",
   },
