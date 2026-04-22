@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import { pickBoss } from "../data/bosses";
-import { pickStageQuestions } from "../data/quiz";
+import { pickBossAndQuestions } from "../data/bosses";
 import { getStage } from "../data/stages";
 import type { AnswerRecord, Era, Question } from "../types";
 
@@ -56,11 +55,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   startBattle: (era, stageIndex) => {
     const stage = getStage(stageIndex);
-    const questions = pickStageQuestions(era, stage);
+    const { name, questions } = pickBossAndQuestions(era, stage);
     set({
       era,
       stageIndex,
-      bossName: pickBoss(era),
+      bossName: name,
       questions,
       currentIndex: 0,
       playerHP: MAX_PLAYER_HP,
