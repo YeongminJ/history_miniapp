@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="_shared.css" />
+    <style>
+      body {
+        width: 636px;
+        height: 1048px;
+        position: relative;
+        background: radial-gradient(ellipse at 50% 0%, #37474F 0%, #102027 80%, #000 100%);
+        color: #FFFFFF;
+        overflow: hidden;
+      }
+      body::before {
+        content: ""; position: absolute; inset: 0; opacity: 0.05;
+        background-image:
+          repeating-linear-gradient(45deg, #FFFFFF 0 2px, transparent 2px 20px),
+          repeating-linear-gradient(-45deg, #FFFFFF 0 2px, transparent 2px 20px);
+        pointer-events: none;
+      }
+      /* torches */
+      .torch-l, .torch-r {
+        position: absolute; top: 74px; width: 6px; height: 72px;
+        background: linear-gradient(to bottom, #5D4037, #3E2723);
+        border-radius: 2px;
+      }
+      .torch-l { left: 18px; }
+      .torch-r { right: 18px; }
+      .flame {
+        position: absolute; top: -22px; left: 50%; transform: translateX(-50%);
+        width: 22px; height: 30px;
+        background: radial-gradient(ellipse at center, #FFC107 0%, #FF6F00 40%, transparent 70%);
+        border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+        filter: blur(1px);
+      }
+      .flame-glow {
+        position: absolute; top: -48px; left: 50%; transform: translateX(-50%);
+        width: 82px; height: 82px;
+        background: radial-gradient(circle, rgba(255,193,7,0.35) 0%, transparent 70%);
+      }
+      .phone { position: relative; padding: 60px 24px 20px; z-index: 1; }
+
+      .top-row {
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: 12px; color: rgba(255,255,255,0.85); margin-bottom: 10px;
+        font-weight: 700; letter-spacing: 1px;
+      }
+      .rooms { display: flex; gap: 5px; }
+      .room {
+        width: 22px; height: 26px; border-radius: 3px 3px 0 0;
+        border: 1.5px solid rgba(255,255,255,0.25);
+        background: rgba(255,255,255,0.1);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 10px; font-weight: 800;
+      }
+      .room.done { background: #FFC107; border-color: #FFC107; color: #000; }
+      .room.active { border-color: #FFC107; box-shadow: 0 0 10px #FFC107aa; color: #FFF; }
+
+      .combo {
+        padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 800;
+        background: linear-gradient(135deg, #FFB300, #FB8C00); color: #FFF;
+        box-shadow: 0 2px 8px rgba(251,140,0,0.4);
+      }
+
+      .hp-label { display: flex; justify-content: space-between;
+        font-size: 11px; color: #FFF; opacity: 0.85; font-weight: 700; margin: 4px 0;
+        letter-spacing: 1px;
+      }
+      .segbar { display: flex; gap: 3px; }
+      .seg {
+        flex: 1; height: 10px; border-radius: 2px;
+        border: 1px solid rgba(255,255,255,0.25);
+        background: rgba(255,255,255,0.12);
+      }
+      .seg.filled-accent { background: #FFC107; border-color: #FFC107; box-shadow: 0 0 6px #FFC10788; }
+      .seg.filled-hp { background: #66BB6A; border-color: #66BB6A; box-shadow: 0 0 6px #66BB6A88; }
+
+      .enemy-wrap {
+        display: flex; flex-direction: column; align-items: center; gap: 10px;
+        margin-top: 18px;
+      }
+      .banner {
+        padding: 6px 18px; background: #263238; border: 1.5px solid #BDBDBD;
+        border-radius: 20px; color: #FFC107;
+        font-size: 13px; font-weight: 800; letter-spacing: 1px;
+        box-shadow: 0 0 14px rgba(255,193,7,0.55);
+      }
+      .portrait {
+        position: relative;
+        width: 140px; height: 140px; border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #263238 0%, #000 90%);
+        border: 3px solid #BDBDBD;
+        box-shadow: 0 0 30px rgba(255,193,7,0.55), inset 0 0 20px rgba(0,0,0,0.6);
+        display: flex; align-items: center; justify-content: center;
+      }
+      .portrait .ico { font-size: 80px; line-height: 1; }
+
+      .bubble {
+        margin-top: 22px; position: relative;
+        background: linear-gradient(180deg, rgba(255,255,255,0.97) 0%, rgba(240,240,245,0.97) 100%);
+        border: 2px solid #FFC107; border-radius: 18px;
+        padding: 18px 20px; color: #212121;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.45), 0 0 16px #FFC10733;
+      }
+      .bubble .tail {
+        position: absolute; top: -12px; left: 50%; transform: translateX(-50%) rotate(45deg);
+        width: 18px; height: 18px; background: #FFFFFF;
+        border-left: 2px solid #FFC107; border-top: 2px solid #FFC107;
+      }
+      .bubble .period {
+        font-size: 11px; color: #757575; font-weight: 700;
+        margin-bottom: 6px; letter-spacing: 1px;
+      }
+      .bubble .q {
+        font-size: 17px; font-weight: 800; line-height: 1.5;
+      }
+
+      .timer { margin-top: 14px; }
+      .timer .tl { display: flex; justify-content: space-between;
+        font-size: 13px; color: rgba(255,255,255,0.85); font-weight: 700; margin-bottom: 4px;
+      }
+      .timer .tbar { height: 6px; width: 100%; background: rgba(255,255,255,0.12); border-radius: 999px; overflow: hidden; }
+      .timer .tfill { width: 62%; height: 100%; background: #FFB74D; }
+
+      .choices { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
+      .choice {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 16px; border-radius: 12px;
+        background: rgba(255,255,255,0.08);
+        border: 1.5px solid rgba(255,255,255,0.2);
+        color: #FFFFFF; font-size: 15px; font-weight: 700;
+      }
+      .choice .num { font-size: 18px; color: #FFC107; opacity: 0.9; }
+
+      .player { margin-top: 16px; }
+    </style>
+  </head>
+  <body>
+    <div class="torch-l"><div class="flame"></div><div class="flame-glow"></div></div>
+    <div class="torch-r"><div class="flame"></div><div class="flame-glow"></div></div>
+
+    <div class="phone">
+      <div class="top-row">
+        <div>조선 · Stage 3 · 격전</div>
+        <div class="rooms">
+          <div class="room done">✔</div>
+          <div class="room done">✔</div>
+          <div class="room active">●</div>
+          <div class="room"></div>
+          <div class="room"></div>
+        </div>
+        <div class="combo">🔥 콤보 ×2</div>
+      </div>
+
+      <div class="hp-label"><span>🗡 적 HP</span><span>1 / 3</span></div>
+      <div class="segbar">
+        <div class="seg filled-accent"></div>
+        <div class="seg"></div>
+        <div class="seg"></div>
+      </div>
+
+      <div class="enemy-wrap">
+        <div class="banner">✦ 정약용 ✦</div>
+        <div class="portrait"><div class="ico">👑</div></div>
+      </div>
+
+      <div class="bubble">
+        <div class="tail"></div>
+        <div class="period">📜 조선 후기</div>
+        <div class="q">정약용이 수원 화성 공사에서 고안한 기구로, 무거운 돌을 끌어올리는 데 사용된 것은?</div>
+      </div>
+
+      <div class="timer">
+        <div class="tl"><span>⏱ 남은 시간</span><span>6.2초</span></div>
+        <div class="tbar"><div class="tfill"></div></div>
+      </div>
+
+      <div class="choices">
+        <div class="choice"><span class="num">①</span><span>거중기</span></div>
+        <div class="choice"><span class="num">②</span><span>자격루</span></div>
+        <div class="choice"><span class="num">③</span><span>앙부일구</span></div>
+        <div class="choice"><span class="num">④</span><span>측우기</span></div>
+      </div>
+
+      <div class="player">
+        <div class="hp-label"><span>❤️ 내 HP</span><span>3 / 3</span></div>
+        <div class="segbar">
+          <div class="seg filled-hp"></div>
+          <div class="seg filled-hp"></div>
+          <div class="seg filled-hp"></div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

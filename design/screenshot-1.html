@@ -1,0 +1,107 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="_shared.css" />
+    <style>
+      body {
+        width: 636px;
+        height: 1048px;
+        background: #FFFFFF;
+      }
+      .phone {
+        width: 636px;
+        height: 1048px;
+        padding: 52px 32px 32px;
+        color: #212121;
+      }
+      .title {
+        font-size: 40px;
+        font-weight: 900;
+        letter-spacing: -1px;
+      }
+      .sub {
+        font-size: 17px;
+        color: #616161;
+        margin-top: 10px;
+        font-weight: 500;
+      }
+      .hero {
+        margin-top: 32px;
+        background: linear-gradient(135deg, #5D4037 0%, #3E2723 100%);
+        border-radius: 28px;
+        padding: 32px;
+        color: #FFFFFF;
+        box-shadow: 0 8px 24px rgba(93, 64, 55, 0.25);
+      }
+      .hero .label { font-size: 15px; opacity: 0.85; }
+      .hero .streak {
+        font-size: 64px;
+        font-weight: 900;
+        line-height: 1.1;
+        margin-top: 8px;
+      }
+      .hero .note { font-size: 14px; opacity: 0.75; margin-top: 10px; }
+      .stats {
+        margin-top: 22px;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 12px;
+      }
+      .stat {
+        background: #F5F5F5;
+        border-radius: 18px;
+        padding: 20px 12px;
+        text-align: center;
+      }
+      .stat .k { font-size: 12px; color: #9E9E9E; margin-bottom: 6px; font-weight: 600; }
+      .stat .v { font-size: 24px; font-weight: 900; color: #212121; }
+      .cta {
+        margin-top: 36px;
+        height: 70px;
+        border-radius: 20px;
+        background: linear-gradient(135deg, #5D4037 0%, #8D6E63 100%);
+        color: #FFFFFF;
+        font-size: 20px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        letter-spacing: 1px;
+        box-shadow: 0 10px 24px rgba(93, 64, 55, 0.35);
+      }
+      .badge {
+        display: inline-block;
+        background: #FFECB3;
+        color: #8D6E63;
+        font-size: 12px;
+        font-weight: 800;
+        padding: 6px 12px;
+        border-radius: 999px;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="phone">
+      <div class="badge">📜 한국사 RPG 퀴즈</div>
+      <div class="title">내가역사왕 👑</div>
+      <div class="sub">역사 속 인물을 만나 던전을 정복하세요</div>
+
+      <div class="hero">
+        <div class="label">연속 출석</div>
+        <div class="streak">🔥 7일</div>
+        <div class="note">오늘도 한 챕터를 정복해 보세요</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><div class="k">푼 문제</div><div class="v">42</div></div>
+        <div class="stat"><div class="k">정답률</div><div class="v">81%</div></div>
+        <div class="stat"><div class="k">누적 점수</div><div class="v">1,250</div></div>
+      </div>
+
+      <div class="cta">던전 입장 ▶</div>
+    </div>
+  </body>
+</html>

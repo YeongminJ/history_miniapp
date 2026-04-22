@@ -8,6 +8,9 @@ dist/
 build/
 .next/
 out/
+# design/out is an exception — these are final marketing assets
+!design/out/
+!design/out/**
 
 # Environment
 .env

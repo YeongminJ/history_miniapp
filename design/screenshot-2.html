@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="_shared.css" />
+    <style>
+      body {
+        width: 636px;
+        height: 1048px;
+        background: radial-gradient(ellipse at 50% 0%, #37474F 0%, #102027 80%, #000 100%);
+        color: #FFFFFF;
+      }
+      .phone { padding: 60px 28px 32px; }
+      .back { font-size: 14px; color: rgba(255,255,255,0.7); margin-bottom: 20px; }
+      .head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+      .emo { font-size: 54px; line-height: 1; }
+      .era { font-size: 32px; font-weight: 900; color: #FFC107; letter-spacing: 1px; }
+      .meta { font-size: 13px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+      .progress {
+        height: 8px; width: 100%;
+        background: rgba(255,255,255,0.1); border-radius: 999px; overflow: hidden;
+        margin-bottom: 28px;
+      }
+      .progress .fill {
+        width: 40%; height: 100%; background: #FFC107; border-radius: 999px;
+        box-shadow: 0 0 12px rgba(255,193,7,0.6);
+      }
+      .stage {
+        display: flex; align-items: center; gap: 16px;
+        padding: 18px 20px; margin-bottom: 14px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.07);
+        border: 1.5px solid rgba(255,255,255,0.18);
+      }
+      .stage.done {
+        background: linear-gradient(135deg, rgba(255,193,7,0.22) 0%, rgba(255,193,7,0.08) 100%);
+        border-color: #FFC107;
+        box-shadow: 0 0 20px rgba(255,193,7,0.25);
+      }
+      .stage.locked {
+        opacity: 0.55; border-color: rgba(255,255,255,0.08);
+      }
+      .badge-num {
+        width: 52px; height: 52px; border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        border: 1.5px solid rgba(255,255,255,0.2);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; font-weight: 900; color: #FFFFFF;
+      }
+      .stage.done .badge-num {
+        background: #FFC107; color: #000; border-color: #FFC107;
+        box-shadow: 0 0 16px rgba(255,193,7,0.7);
+      }
+      .stage.boss .badge-num {
+        border-radius: 12px; font-size: 22px;
+      }
+      .stage-title { font-size: 17px; font-weight: 800; letter-spacing: 0.5px; }
+      .stage-meta {
+        font-size: 12px; color: rgba(255,255,255,0.65);
+        margin-top: 4px; letter-spacing: 0.3px;
+      }
+      .status { font-size: 22px; color: #FFC107; margin-left: auto; }
+    </style>
+  </head>
+  <body>
+    <div class="phone">
+      <div class="back">← 시대 선택</div>
+      <div class="head">
+        <div class="emo">👑</div>
+        <div>
+          <div class="era">조선 던전</div>
+          <div class="meta">스테이지 2 / 5 클리어 · 40%</div>
+        </div>
+      </div>
+      <div class="progress"><div class="fill"></div></div>
+
+      <div class="stage done">
+        <div class="badge-num">1</div>
+        <div>
+          <div class="stage-title">Stage 1 · 입문</div>
+          <div class="stage-meta">쉬움×5</div>
+        </div>
+        <div class="status">★</div>
+      </div>
+
+      <div class="stage done">
+        <div class="badge-num">2</div>
+        <div>
+          <div class="stage-title">Stage 2 · 수련</div>
+          <div class="stage-meta">쉬움×4 · 보통×1</div>
+        </div>
+        <div class="status">★</div>
+      </div>
+
+      <div class="stage">
+        <div class="badge-num">3</div>
+        <div>
+          <div class="stage-title">Stage 3 · 격전</div>
+          <div class="stage-meta">쉬움×2 · 보통×3</div>
+        </div>
+        <div class="status">›</div>
+      </div>
+
+      <div class="stage locked">
+        <div class="badge-num">4</div>
+        <div>
+          <div class="stage-title">Stage 4 · 정예전</div>
+          <div class="stage-meta">보통×3 · 어려움×2</div>
+        </div>
+        <div class="status">🔒</div>
+      </div>
+
+      <div class="stage locked boss">
+        <div class="badge-num">👑</div>
+        <div>
+          <div class="stage-title">Stage 5 · 보스전</div>
+          <div class="stage-meta">보통×1 · 어려움×4 · 보스전</div>
+        </div>
+        <div class="status">🔒</div>
+      </div>
+    </div>
+  </body>
+</html>

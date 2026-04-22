@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { background: transparent; }
+      body {
+        width: 600px;
+        height: 600px;
+        overflow: hidden;
+      }
+      .canvas {
+        position: relative;
+        width: 600px;
+        height: 600px;
+        background:
+          radial-gradient(ellipse at 30% 20%, #8D6E63 0%, transparent 55%),
+          radial-gradient(circle at 50% 50%, #5D4037 0%, #3E2723 55%, #1B0000 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      /* subtle stone pattern */
+      .canvas::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.05;
+        background-image:
+          repeating-linear-gradient(45deg, #FFFFFF 0 2px, transparent 2px 24px),
+          repeating-linear-gradient(-45deg, #FFFFFF 0 2px, transparent 2px 24px);
+        pointer-events: none;
+      }
+      /* outer golden ring */
+      .ring {
+        position: absolute;
+        inset: 60px;
+        border-radius: 50%;
+        border: 6px solid rgba(255, 193, 7, 0.3);
+        box-shadow:
+          0 0 80px rgba(255, 193, 7, 0.22) inset,
+          0 0 40px rgba(255, 193, 7, 0.15);
+      }
+      .safe {
+        position: relative;
+        width: 440px;
+        height: 440px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .crown {
+        width: 220px;
+        height: 135px;
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55))
+          drop-shadow(0 0 24px rgba(255, 193, 7, 0.35));
+      }
+      .title {
+        font-family: "Nanum Myeongjo", "AppleMyungjo", "Apple SD Gothic Neo",
+          "Noto Serif KR", serif;
+        font-weight: 900;
+        font-size: 128px;
+        line-height: 1;
+        letter-spacing: -4px;
+        white-space: nowrap;
+        background: linear-gradient(180deg, #FFF8E1 0%, #FFC107 55%, #FF8F00 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+        margin-top: -4px;
+      }
+      .sub {
+        font-family: "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+        font-weight: 800;
+        font-size: 22px;
+        letter-spacing: 12px;
+        color: #FFD54F;
+        opacity: 0.9;
+        margin-top: 12px;
+        padding-left: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="ring"></div>
+      <div class="safe">
+        <svg class="crown" viewBox="0 0 220 135" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFF8E1" />
+              <stop offset="50%" stop-color="#FFC107" />
+              <stop offset="100%" stop-color="#FF8F00" />
+            </linearGradient>
+          </defs>
+          <!-- crown body -->
+          <path
+            d="M 12 118 L 28 35 L 66 86 L 110 12 L 154 86 L 192 35 L 208 118 Z"
+            fill="url(#g)"
+            stroke="#3E2723"
+            stroke-width="4"
+            stroke-linejoin="round"
+          />
+          <!-- base band -->
+          <rect x="10" y="118" width="200" height="14" rx="3"
+            fill="url(#g)" stroke="#3E2723" stroke-width="4" />
+          <!-- gems -->
+          <circle cx="28" cy="46" r="7" fill="#E91E63" stroke="#3E2723" stroke-width="2" />
+          <circle cx="110" cy="26" r="10" fill="#E91E63" stroke="#3E2723" stroke-width="2" />
+          <circle cx="192" cy="46" r="7" fill="#E91E63" stroke="#3E2723" stroke-width="2" />
+        </svg>
+        <div class="title">역사왕</div>
+        <div class="sub">HISTORY KING</div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,225 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="_shared.css" />
+    <style>
+      body {
+        width: 1932px;
+        height: 828px;
+        position: relative;
+        background:
+          radial-gradient(ellipse at 70% 50%, #8D6E63 0%, transparent 55%),
+          radial-gradient(circle at 50% 50%, #5D4037 0%, #3E2723 55%, #1B0000 100%);
+        overflow: hidden;
+      }
+      body::before {
+        content: ""; position: absolute; inset: 0; opacity: 0.06;
+        background-image:
+          repeating-linear-gradient(45deg, #FFFFFF 0 2px, transparent 2px 28px),
+          repeating-linear-gradient(-45deg, #FFFFFF 0 2px, transparent 2px 28px);
+      }
+      .wrap {
+        position: relative; z-index: 1; width: 100%; height: 100%;
+        display: grid; grid-template-columns: 1.1fr 1fr;
+        align-items: center; padding: 80px 100px;
+        color: #FFFFFF;
+        gap: 60px;
+      }
+      .left .tag {
+        display: inline-block; padding: 8px 20px;
+        background: rgba(255, 193, 7, 0.15);
+        border: 1.5px solid rgba(255, 193, 7, 0.6);
+        color: #FFD54F;
+        border-radius: 999px;
+        font-weight: 800; letter-spacing: 3px; font-size: 18px;
+        margin-bottom: 32px;
+      }
+      .left .title {
+        font-family: "Nanum Myeongjo", "AppleMyungjo", "Apple SD Gothic Neo",
+          "Noto Serif KR", serif;
+        font-size: 136px; font-weight: 900; line-height: 1;
+        letter-spacing: -4px;
+        white-space: nowrap;
+        background: linear-gradient(180deg, #FFF8E1 0%, #FFC107 55%, #FF8F00 100%);
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+        text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      }
+      .left .sub {
+        font-size: 40px; font-weight: 800; color: #FFFFFF;
+        margin-top: 20px; letter-spacing: -1px;
+      }
+      .left .desc {
+        font-size: 24px; color: rgba(255, 255, 255, 0.75);
+        margin-top: 18px; line-height: 1.5; font-weight: 500;
+      }
+      .left .features {
+        display: flex; gap: 18px; margin-top: 40px; flex-wrap: wrap;
+      }
+      .feat {
+        padding: 14px 22px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1.5px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        font-size: 18px; font-weight: 700;
+        color: #FFD54F; letter-spacing: 0.5px;
+      }
+
+      .right {
+        position: relative; height: 100%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 28px;
+      }
+      .right .phones {
+        position: relative; display: flex; gap: 36px;
+        transform: rotate(-6deg);
+      }
+      .phone-mini {
+        width: 260px; height: 480px;
+        border-radius: 32px;
+        background: radial-gradient(ellipse at 50% 0%, #263238 0%, #000 70%);
+        border: 4px solid rgba(255,255,255,0.12);
+        padding: 24px 16px 18px;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+        position: relative;
+        overflow: hidden;
+      }
+      .phone-mini:nth-child(2) {
+        transform: translateY(-24px); z-index: 2;
+      }
+      .phone-mini:nth-child(3) {
+        transform: translateY(12px);
+      }
+      .mini-label {
+        font-size: 10px; letter-spacing: 1.5px;
+        color: #FFC107; font-weight: 800;
+        text-align: center; margin-bottom: 10px;
+      }
+      .mini-enemy {
+        display: flex; flex-direction: column; align-items: center; gap: 8px;
+        margin-bottom: 12px;
+      }
+      .mini-banner {
+        padding: 4px 12px; background: #263238; border: 1px solid #FFC107;
+        border-radius: 14px; color: #FFC107; font-size: 10px; font-weight: 800;
+      }
+      .mini-port {
+        width: 80px; height: 80px; border-radius: 50%;
+        background: radial-gradient(circle at 30% 30%, #263238 0%, #000 90%);
+        border: 2px solid #FFC107;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 46px; box-shadow: 0 0 18px rgba(255,193,7,0.5);
+      }
+      .mini-q {
+        background: #FFF; border: 1.5px solid #FFC107; border-radius: 10px;
+        padding: 10px; font-size: 10px; color: #212121;
+        font-weight: 800; line-height: 1.35; text-align: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      }
+      .mini-choices {
+        display: flex; flex-direction: column; gap: 5px; margin-top: 10px;
+      }
+      .mini-c {
+        padding: 7px 10px; border-radius: 6px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.22);
+        font-size: 10px; color: #FFF; font-weight: 700;
+        display: flex; align-items: center; gap: 6px;
+      }
+      .mini-c.hit {
+        background: rgba(76,175,80,0.25); border-color: #81C784;
+      }
+      .mini-c .n { color: #FFC107; font-weight: 800; }
+
+      /* floating badges */
+      .float-badge {
+        position: absolute; padding: 10px 18px; border-radius: 999px;
+        font-weight: 900; font-size: 24px; letter-spacing: 1px;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.5);
+      }
+      .float-badge.combo {
+        top: 60px; right: 120px;
+        background: linear-gradient(135deg, #FFB300, #FB8C00); color: #FFF;
+        transform: rotate(8deg);
+      }
+      .float-badge.damage {
+        bottom: 80px; right: 60px; font-size: 42px;
+        color: #FFEB3B;
+        background: transparent;
+        text-shadow: 0 0 12px #FF5252, 0 0 24px #FF5252, 0 4px 10px rgba(0,0,0,0.7);
+        transform: rotate(-10deg);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="left">
+        <div class="tag">📜 한국사 RPG 퀴즈</div>
+        <div class="title">내가역사왕</div>
+        <div class="sub">역사 속 인물과 맞붙는 던전 퀴즈</div>
+        <div class="desc">
+          고대부터 현대까지 1,000문제.<br />
+          시대별 던전을 공략하고 연속 정답 콤보로 점수를 쌓으세요.
+        </div>
+        <div class="features">
+          <div class="feat">⚔ 5시대 × 5스테이지</div>
+          <div class="feat">👑 1,000문제</div>
+          <div class="feat">🔥 콤보·크리티컬</div>
+          <div class="feat">📖 모든 문제 해설</div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="phones">
+          <div class="phone-mini">
+            <div class="mini-label">고대 · 보스전</div>
+            <div class="mini-enemy">
+              <div class="mini-banner">✦ 광개토대왕 ✦</div>
+              <div class="mini-port">🗿</div>
+            </div>
+            <div class="mini-q">광개토대왕이 점령한 지역으로 유명한 전장은?</div>
+            <div class="mini-choices">
+              <div class="mini-c"><span class="n">①</span>요동</div>
+              <div class="mini-c hit"><span class="n">②</span>관미성</div>
+              <div class="mini-c"><span class="n">③</span>평양</div>
+              <div class="mini-c"><span class="n">④</span>한성</div>
+            </div>
+          </div>
+
+          <div class="phone-mini">
+            <div class="mini-label">조선 · 정예전</div>
+            <div class="mini-enemy">
+              <div class="mini-banner">✦ 세종 ✦</div>
+              <div class="mini-port">👑</div>
+            </div>
+            <div class="mini-q">세종이 반포한 한글의 원래 명칭은?</div>
+            <div class="mini-choices">
+              <div class="mini-c hit"><span class="n">①</span>훈민정음</div>
+              <div class="mini-c"><span class="n">②</span>이두</div>
+              <div class="mini-c"><span class="n">③</span>향찰</div>
+              <div class="mini-c"><span class="n">④</span>구결</div>
+            </div>
+          </div>
+
+          <div class="phone-mini">
+            <div class="mini-label">근대 · 격전</div>
+            <div class="mini-enemy">
+              <div class="mini-banner">✦ 안중근 ✦</div>
+              <div class="mini-port">⚔️</div>
+            </div>
+            <div class="mini-q">안중근이 1909년 의거를 행한 장소는?</div>
+            <div class="mini-choices">
+              <div class="mini-c"><span class="n">①</span>서울</div>
+              <div class="mini-c"><span class="n">②</span>도쿄</div>
+              <div class="mini-c hit"><span class="n">③</span>하얼빈</div>
+              <div class="mini-c"><span class="n">④</span>상하이</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="float-badge combo">🔥 콤보 ×3</div>
+        <div class="float-badge damage">CRITICAL! -35</div>
+      </div>
+    </div>
+  </body>
+</html>
