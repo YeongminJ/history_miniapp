@@ -1,11 +1,41 @@
 import {
+  getOperationalEnvironment,
   loadFullScreenAd,
   showFullScreenAd,
 } from "@apps-in-toss/web-framework";
 import { useCallback, useEffect, useState } from "react";
 
-// TODO: 프로덕션 광고 그룹 ID로 교체 (현재는 공식 문서의 테스트 ID)
-const AD_GROUP_ID = "ait.dev.43daa14da3ae487b";
+/**
+ * 보상형 광고 그룹 ID.
+ * - 테스트용: `ait-ad-test-rewarded-id` (공식 가이드 권장)
+ * - 프로덕션: 앱인토스 콘솔에서 발급받은 ID를 `VITE_AD_GROUP_ID_REWARDED`
+ *   환경변수로 주입 (app/.env.local 등).
+ *
+ * 실제 프로덕션 ID가 있어도 다음 조건에서는 테스트 ID를 씁니다 —
+ * 1) Vite dev 빌드(`npm run dev`)
+ * 2) 앱인토스 샌드박스 환경 (`getOperationalEnvironment() === 'sandbox'`)
+ *
+ * 이렇게 하면 실제 광고 키가 개발 도중 노출되어 정책 위반으로
+ * 불이익을 받는 것을 예방할 수 있어요.
+ */
+const TEST_AD_GROUP_ID = "ait-ad-test-rewarded-id";
+const PROD_AD_GROUP_ID = import.meta.env.VITE_AD_GROUP_ID_REWARDED as
+  | string
+  | undefined;
+
+function resolveAdGroupId(): { id: string; isTest: boolean } {
+  if (!PROD_AD_GROUP_ID) return { id: TEST_AD_GROUP_ID, isTest: true };
+  if (import.meta.env.DEV) return { id: TEST_AD_GROUP_ID, isTest: true };
+  try {
+    if (getOperationalEnvironment() === "sandbox") {
+      return { id: TEST_AD_GROUP_ID, isTest: true };
+    }
+  } catch {
+    // SDK가 환경을 판정할 수 없으면 안전하게 테스트 ID
+    return { id: TEST_AD_GROUP_ID, isTest: true };
+  }
+  return { id: PROD_AD_GROUP_ID, isTest: false };
+}
 
 type AdState = "unsupported" | "loading" | "ready" | "showing" | "error";
 
@@ -40,6 +70,8 @@ function safeCall<T extends (...args: never[]) => unknown>(
 
 export function useRewardedAd() {
   const [state, setState] = useState<AdState>("loading");
+  const [adGroupInfo] = useState(() => resolveAdGroupId());
+  const adGroupId = adGroupInfo.id;
 
   const loadAd = useCallback(() => {
     if (
@@ -51,7 +83,7 @@ export function useRewardedAd() {
     }
     setState("loading");
     const unregister = safeCall(loadFullScreenAd, {
-      options: { adGroupId: AD_GROUP_ID },
+      options: { adGroupId },
       onEvent: (event) => {
         if (event.type === "loaded") setState("ready");
       },
@@ -65,7 +97,7 @@ export function useRewardedAd() {
       return () => {};
     }
     return unregister;
-  }, []);
+  }, [adGroupId]);
 
   useEffect(() => {
     const unregister = loadAd();
@@ -81,7 +113,7 @@ export function useRewardedAd() {
       setState("showing");
       let rewarded = false;
       const result = safeCall(showFullScreenAd, {
-        options: { adGroupId: AD_GROUP_ID },
+        options: { adGroupId },
         onEvent: (event) => {
           switch (event.type) {
             case "userEarnedReward":
@@ -107,13 +139,14 @@ export function useRewardedAd() {
         onDismissed?.();
       }
     },
-    [state, loadAd],
+    [state, loadAd, adGroupId],
   );
 
   return {
     state,
     ready: state === "ready",
     supported: state !== "unsupported",
+    isTest: adGroupInfo.isTest,
     show,
   };
 }
