@@ -6,8 +6,9 @@ interface Props {
   visible: boolean;
   era: Era;
   adReady: boolean;
+  adLoading?: boolean;
   adSupported: boolean;
-  adIsMock?: boolean;
+  adIsTest?: boolean;
   onWatchAd: () => void;
   onGiveUp: () => void;
 }
@@ -16,12 +17,15 @@ export function ReviveOverlay({
   visible,
   era,
   adReady,
+  adLoading,
   adSupported,
-  adIsMock,
+  adIsTest,
   onWatchAd,
   onGiveUp,
 }: Props) {
   const theme = ERA_THEME[era];
+  // 로딩 중이어도 버튼 활성화해서 대기 후 자동 재생되게 함
+  const canWatch = adSupported && (adReady || adLoading);
   return (
     <AnimatePresence>
       {visible ? (
@@ -95,7 +99,7 @@ export function ReviveOverlay({
 
             <button
               type="button"
-              disabled={!adSupported || !adReady}
+              disabled={!canWatch}
               onClick={onWatchAd}
               style={{
                 width: "100%",
@@ -104,14 +108,14 @@ export function ReviveOverlay({
                 fontSize: 16,
                 fontWeight: 800,
                 letterSpacing: 0.5,
-                background: !adSupported
+                background: !canWatch
                   ? "rgba(255,255,255,0.08)"
                   : adReady
                     ? theme.accent
                     : "rgba(255,255,255,0.15)",
-                color: adReady && adSupported ? "#000" : "#FFFFFF",
+                color: canWatch && adReady ? "#000" : "#FFFFFF",
                 border: "none",
-                cursor: adSupported && adReady ? "pointer" : "not-allowed",
+                cursor: canWatch ? "pointer" : "not-allowed",
                 boxShadow: adReady ? `0 0 22px ${theme.frameGlow}` : "none",
                 transition: "background 0.2s",
               }}
@@ -120,7 +124,9 @@ export function ReviveOverlay({
                 ? "광고 기능 미지원"
                 : adReady
                   ? "▶ 광고 보고 이어하기"
-                  : "광고 준비 중..."}
+                  : adLoading
+                    ? "광고 준비 중... (눌러도 준비 완료 후 재생)"
+                    : "광고 사용 불가"}
             </button>
 
             <button
@@ -151,7 +157,7 @@ export function ReviveOverlay({
               }}
             >
               챕터당 1회 사용 가능
-              {adIsMock ? " · 테스트 광고 모드" : ""}
+              {adIsTest ? " · 테스트 광고 ID" : ""}
             </div>
           </motion.div>
         </motion.div>
