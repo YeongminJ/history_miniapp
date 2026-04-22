@@ -7,6 +7,7 @@ interface Props {
   era: Era;
   adReady: boolean;
   adSupported: boolean;
+  adIsMock?: boolean;
   onWatchAd: () => void;
   onGiveUp: () => void;
 }
@@ -16,6 +17,7 @@ export function ReviveOverlay({
   era,
   adReady,
   adSupported,
+  adIsMock,
   onWatchAd,
   onGiveUp,
 }: Props) {
@@ -149,6 +151,7 @@ export function ReviveOverlay({
               }}
             >
               챕터당 1회 사용 가능
+              {adIsMock ? " · 테스트 광고 모드" : ""}
             </div>
           </motion.div>
         </motion.div>

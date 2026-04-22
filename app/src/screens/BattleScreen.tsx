@@ -7,6 +7,7 @@ import { ComboBadge } from "../components/ComboBadge";
 import { DungeonBackground } from "../components/DungeonBackground";
 import { EnemyScene } from "../components/EnemyScene";
 import { FloatingDamage } from "../components/FloatingDamage";
+import { MockAdOverlay } from "../components/MockAdOverlay";
 import { ReviveOverlay } from "../components/ReviveOverlay";
 import { RoomProgress } from "../components/RoomProgress";
 import { HeartHPBar } from "../components/HeartHPBar";
@@ -326,6 +327,7 @@ export function BattleScreen() {
           era={era}
           adReady={ad.ready}
           adSupported={ad.supported}
+          adIsMock={ad.isMock}
           onWatchAd={() => {
             ad.show(
               () => {
@@ -342,6 +344,10 @@ export function BattleScreen() {
         />
         <BattleOutro visible={phase === "outro"} victory={victory} />
       </div>
+      <MockAdOverlay
+        visible={ad.mockShowing}
+        durationMs={ad.mockDurationMs}
+      />
     </DungeonBackground>
   );
 }

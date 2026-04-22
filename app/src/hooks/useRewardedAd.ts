@@ -3,25 +3,21 @@ import {
   loadFullScreenAd,
   showFullScreenAd,
 } from "@apps-in-toss/web-framework";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * 보상형 광고 그룹 ID.
  * - 테스트용: `ait-ad-test-rewarded-id` (공식 가이드 권장)
  * - 프로덕션: 앱인토스 콘솔에서 발급받은 ID를 `VITE_AD_GROUP_ID_REWARDED`
  *   환경변수로 주입 (app/.env.local 등).
- *
- * 실제 프로덕션 ID가 있어도 다음 조건에서는 테스트 ID를 씁니다 —
- * 1) Vite dev 빌드(`npm run dev`)
- * 2) 앱인토스 샌드박스 환경 (`getOperationalEnvironment() === 'sandbox'`)
- *
- * 이렇게 하면 실제 광고 키가 개발 도중 노출되어 정책 위반으로
- * 불이익을 받는 것을 예방할 수 있어요.
  */
 const TEST_AD_GROUP_ID = "ait-ad-test-rewarded-id";
 const PROD_AD_GROUP_ID = import.meta.env.VITE_AD_GROUP_ID_REWARDED as
   | string
   | undefined;
+
+/** 모의 광고 재생 시간(ms) — 개발/브라우저에서만 사용 */
+const MOCK_AD_DURATION_MS = 2500;
 
 function resolveAdGroupId(): { id: string; isTest: boolean } {
   if (!PROD_AD_GROUP_ID) return { id: TEST_AD_GROUP_ID, isTest: true };
@@ -31,19 +27,19 @@ function resolveAdGroupId(): { id: string; isTest: boolean } {
       return { id: TEST_AD_GROUP_ID, isTest: true };
     }
   } catch {
-    // SDK가 환경을 판정할 수 없으면 안전하게 테스트 ID
     return { id: TEST_AD_GROUP_ID, isTest: true };
   }
   return { id: PROD_AD_GROUP_ID, isTest: false };
 }
 
-type AdState = "unsupported" | "loading" | "ready" | "showing" | "error";
+export type AdState =
+  | "unsupported"
+  | "loading"
+  | "ready"
+  | "showing"
+  | "mock-showing"
+  | "error";
 
-/**
- * SDK의 `isSupported()`는 토스 샌드박스 환경이 아닐 때
- * `__CONSTANT_HANDLER_MAP`에 키가 없어서 throw 해요. 브라우저 개발 중엔
- * 이 예외로 화면이 통째로 꺼지므로 try/catch로 안전하게 감싸요.
- */
 function safeIsSupported(
   fn: { isSupported?: () => boolean } | undefined,
 ): boolean {
@@ -68,16 +64,27 @@ function safeCall<T extends (...args: never[]) => unknown>(
   }
 }
 
+function sdkIsAvailable(): boolean {
+  return (
+    safeIsSupported(loadFullScreenAd) && safeIsSupported(showFullScreenAd)
+  );
+}
+
 export function useRewardedAd() {
-  const [state, setState] = useState<AdState>("loading");
+  const isMock = !sdkIsAvailable() && import.meta.env.DEV;
+  const [state, setState] = useState<AdState>(
+    isMock ? "ready" : "loading",
+  );
   const [adGroupInfo] = useState(() => resolveAdGroupId());
   const adGroupId = adGroupInfo.id;
+  const mockTimerRef = useRef<number | null>(null);
 
   const loadAd = useCallback(() => {
-    if (
-      !safeIsSupported(loadFullScreenAd) ||
-      !safeIsSupported(showFullScreenAd)
-    ) {
+    if (isMock) {
+      setState("ready");
+      return () => {};
+    }
+    if (!sdkIsAvailable()) {
       setState("unsupported");
       return () => {};
     }
@@ -97,15 +104,31 @@ export function useRewardedAd() {
       return () => {};
     }
     return unregister;
-  }, [adGroupId]);
+  }, [adGroupId, isMock]);
 
   useEffect(() => {
     const unregister = loadAd();
-    return () => unregister();
+    return () => {
+      unregister();
+      if (mockTimerRef.current !== null) {
+        window.clearTimeout(mockTimerRef.current);
+        mockTimerRef.current = null;
+      }
+    };
   }, [loadAd]);
 
   const show = useCallback(
     (onReward: () => void, onDismissed?: () => void) => {
+      if (isMock) {
+        // 개발 모드 모의 광고: 일정 시간 후 보상 지급
+        setState("mock-showing");
+        mockTimerRef.current = window.setTimeout(() => {
+          mockTimerRef.current = null;
+          onReward();
+          setState("ready");
+        }, MOCK_AD_DURATION_MS);
+        return;
+      }
       if (state !== "ready" || !safeIsSupported(showFullScreenAd)) {
         onDismissed?.();
         return;
@@ -139,13 +162,16 @@ export function useRewardedAd() {
         onDismissed?.();
       }
     },
-    [state, loadAd, adGroupId],
+    [state, loadAd, adGroupId, isMock],
   );
 
   return {
     state,
     ready: state === "ready",
     supported: state !== "unsupported",
+    isMock,
+    mockShowing: state === "mock-showing",
+    mockDurationMs: MOCK_AD_DURATION_MS,
     isTest: adGroupInfo.isTest,
     show,
   };
