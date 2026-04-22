@@ -9,6 +9,7 @@ import { EnemyScene } from "../components/EnemyScene";
 import { FloatingDamage } from "../components/FloatingDamage";
 import { ReviveOverlay } from "../components/ReviveOverlay";
 import { RoomProgress } from "../components/RoomProgress";
+import { HeartHPBar } from "../components/HeartHPBar";
 import { SegmentedHPBar } from "../components/SegmentedHPBar";
 import { SpeechBubble } from "../components/SpeechBubble";
 import { Timer } from "../components/Timer";
@@ -184,22 +185,15 @@ export function BattleScreen() {
             critical={lastResolution?.critical}
           />
 
-          {/* 플로팅 데미지 */}
-          {lastResolution ? (
+          {/* 적 피해 팝업 (HP 바 + 점수) */}
+          {lastResolution?.correct ? (
             <FloatingDamage
               show={revealed}
-              value={
-                lastResolution.correct ? lastResolution.damage : 1
-              }
-              kind={
-                lastResolution.correct
-                  ? "damage"
-                  : selectedIndex === null
-                    ? "miss"
-                    : "hp-loss"
-              }
-              critical={lastResolution.critical}
               stamp={lastResolution.stamp}
+              label={lastResolution.critical ? "CRITICAL! -1" : "-1"}
+              color={lastResolution.critical ? "#FFEB3B" : "#FF5252"}
+              critical={lastResolution.critical}
+              sub={`+${lastResolution.damage}점`}
             />
           ) : null}
 
@@ -245,14 +239,32 @@ export function BattleScreen() {
           ))}
         </div>
 
-        {/* 하단 내 HP */}
-        <div style={{ padding: "0 20px 16px" }}>
-          <SegmentedHPBar
+        {/* 하단 내 HP (하트) + 플레이어 피격 팝업 */}
+        <div
+          style={{
+            padding: "0 20px 16px",
+            position: "relative",
+          }}
+        >
+          <HeartHPBar
             current={playerHP}
             max={GAME_CONSTANTS.MAX_PLAYER_HP}
-            label="❤️ 내 HP"
-            activeColor="#66BB6A"
+            label="내 HP"
           />
+          {lastResolution && !lastResolution.correct ? (
+            <FloatingDamage
+              show={revealed}
+              stamp={lastResolution.stamp}
+              label={
+                selectedIndex === null ? (
+                  <span>⏱ MISS 💔</span>
+                ) : (
+                  <span>💔 -1</span>
+                )
+              }
+              color="#EF5350"
+            />
+          ) : null}
         </div>
 
         {/* 해설 하단 바텀시트 */}
