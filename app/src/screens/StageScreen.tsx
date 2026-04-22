@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { ERA_BOSS_EMOJI, ERA_THEME } from "../data/bosses";
 import {
   STAGE_DEFS,
   isStageUnlocked,
   stageTitle,
 } from "../data/stages";
+import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useGameStore } from "../store/useGameStore";
 import { useProgressStore } from "../store/useProgressStore";
@@ -18,6 +19,14 @@ export function StageScreen() {
   const startBattle = useGameStore((s) => s.startBattle);
 
   const stages = useMemo(() => STAGE_DEFS, []);
+
+  useEffect(() => {
+    if (!era) return;
+    trackScreen("screen_stage_list", {
+      era,
+      cleared_count: (clearedStages[era] ?? []).length,
+    });
+  }, [era, clearedStages]);
 
   if (!era) {
     return (
@@ -32,6 +41,13 @@ export function StageScreen() {
   const cleared = clearedStages[era] ?? [];
 
   const enter = (stageIndex: number) => {
+    const stage = STAGE_DEFS[stageIndex];
+    trackClick("press_select_stage", {
+      era,
+      stage_index: stageIndex,
+      stage_label: stage?.label ?? "",
+      boss_stage: stage?.boss ?? false,
+    });
     startBattle(era, stageIndex);
     selectStage(stageIndex);
   };
@@ -51,7 +67,10 @@ export function StageScreen() {
       <div style={{ padding: "60px 20px 24px" }}>
         <button
           type="button"
-          onClick={() => navigate("chapter")}
+          onClick={() => {
+            trackClick("press_back_to_chapter_map", { from: "stage_list", era });
+            navigate("chapter");
+          }}
           style={{
             background: "transparent",
             border: "none",

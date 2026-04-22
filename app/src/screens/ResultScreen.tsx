@@ -7,13 +7,22 @@ import {
   isStageUnlocked,
   stageTitle,
 } from "../data/stages";
+import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useGameStore } from "../store/useGameStore";
 import { useProgressStore } from "../store/useProgressStore";
 import type { Question } from "../types";
 
 export function ResultScreen() {
-  const { era, stageIndex, answers, score, reset } = useGameStore();
+  const {
+    era,
+    stageIndex,
+    answers,
+    score,
+    maxCombo,
+    reviveCount,
+    reset,
+  } = useGameStore();
   const goHome = useAppStore((s) => s.goHome);
   const backToStages = useAppStore((s) => s.backToStages);
   const selectStage = useAppStore((s) => s.selectStage);
@@ -41,22 +50,46 @@ export function ResultScreen() {
       correctCount,
       score,
     });
+    trackScreen("screen_result", {
+      era,
+      stage_index: stageIndex,
+      cleared,
+      correct: correctCount,
+      total: answers.length,
+      score,
+    });
+    trackClick(cleared ? "chapter_clear" : "chapter_fail", {
+      era,
+      stage_index: stageIndex,
+      correct: correctCount,
+      total: answers.length,
+      score,
+      max_combo: maxCombo,
+      revived: reviveCount > 0,
+    });
     recorded.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleBack = () => {
+    trackClick("press_back_to_stages", { era, stage_index: stageIndex });
     reset();
     backToStages();
   };
 
   const handleHome = () => {
+    trackClick("press_go_home", {
+      from: "result",
+      era,
+      stage_index: stageIndex,
+    });
     reset();
     goHome();
   };
 
   const handleRetry = () => {
     if (!era) return;
+    trackClick("press_retry_stage", { era, stage_index: stageIndex });
     useGameStore.getState().startBattle(era, stageIndex);
     selectStage(stageIndex);
   };
@@ -64,11 +97,15 @@ export function ResultScreen() {
   const handleNextStage = () => {
     if (!era) return;
     const nextIdx = stageIndex + 1;
+    trackClick("press_next_stage", {
+      era,
+      from_stage: stageIndex,
+      to_stage: nextIdx,
+    });
     if (nextIdx >= STAGE_DEFS.length) {
       handleBack();
       return;
     }
-    // recordChapter 이후 clearedStages가 갱신되었어야 하므로 즉시 다음 스테이지 시작
     useGameStore.getState().startBattle(era, nextIdx);
     selectStage(nextIdx);
   };

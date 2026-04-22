@@ -1,4 +1,6 @@
 import { Button, Top } from "@toss/tds-mobile";
+import { useEffect } from "react";
+import { trackClick, trackScreen } from "../lib/track";
 import { useProgressStore } from "../store/useProgressStore";
 import { useAppStore } from "../store/useAppStore";
 
@@ -11,6 +13,14 @@ export function HomeScreen() {
 
   const accuracy =
     totalPlayed > 0 ? Math.round((totalCorrect / totalPlayed) * 100) : 0;
+
+  useEffect(() => {
+    trackScreen("screen_home", {
+      streak,
+      total_played: totalPlayed,
+      total_correct: totalCorrect,
+    });
+  }, [streak, totalPlayed, totalCorrect]);
 
   return (
     <div style={{ paddingBottom: 120 }}>
@@ -60,7 +70,10 @@ export function HomeScreen() {
         <Button
           size="xlarge"
           display="full"
-          onClick={() => navigate("chapter")}
+          onClick={() => {
+            trackClick("press_enter_dungeon", { streak });
+            navigate("chapter");
+          }}
         >
           던전 입장
         </Button>

@@ -1,7 +1,9 @@
 import { Top } from "@toss/tds-mobile";
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 import { ERAS, byEra } from "../data/quiz";
 import { STAGES_PER_ERA } from "../data/stages";
+import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useProgressStore } from "../store/useProgressStore";
 
@@ -9,6 +11,10 @@ export function ChapterMapScreen() {
   const goHome = useAppStore((s) => s.goHome);
   const selectEra = useAppStore((s) => s.selectEra);
   const clearedStages = useProgressStore((s) => s.clearedStages);
+
+  useEffect(() => {
+    trackScreen("screen_chapter_map");
+  }, []);
 
   return (
     <div style={{ paddingBottom: 40 }}>
@@ -32,7 +38,13 @@ export function ChapterMapScreen() {
             <motion.button
               key={e.era}
               type="button"
-              onClick={() => selectEra(e.era)}
+              onClick={() => {
+                trackClick("press_select_era", {
+                  era: e.era,
+                  cleared_stages: cleared,
+                });
+                selectEra(e.era);
+              }}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.06, duration: 0.3 }}
@@ -98,7 +110,10 @@ export function ChapterMapScreen() {
 
         <button
           type="button"
-          onClick={goHome}
+          onClick={() => {
+            trackClick("press_back_to_home", { from: "chapter_map" });
+            goHome();
+          }}
           style={{
             width: "100%",
             padding: "14px",

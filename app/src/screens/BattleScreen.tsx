@@ -14,8 +14,10 @@ import { SegmentedHPBar } from "../components/SegmentedHPBar";
 import { SpeechBubble } from "../components/SpeechBubble";
 import { Timer } from "../components/Timer";
 import { ERA_THEME } from "../data/bosses";
+import { roleOf } from "../data/roles";
 import { STAGE_DEFS, stageTitle } from "../data/stages";
 import { useRewardedAd } from "../hooks/useRewardedAd";
+import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { GAME_CONSTANTS, useGameStore } from "../store/useGameStore";
 
@@ -55,6 +57,37 @@ export function BattleScreen() {
   useEffect(() => {
     questionStart.current = performance.now();
   }, [currentIndex]);
+
+  // 전투 진입 + 챕터 시작 로그 (보스·역할·스테이지 파라미터)
+  useEffect(() => {
+    if (!era || !bossName) return;
+    const role = roleOf(era, bossName);
+    const stageLabel = STAGE_DEFS[stageIndex]?.label ?? "";
+    trackScreen("screen_battle", {
+      era,
+      stage_index: stageIndex,
+      stage_label: stageLabel,
+      boss_name: bossName,
+      boss_role: role,
+    });
+    trackClick("chapter_start", {
+      era,
+      stage_index: stageIndex,
+      stage_label: stageLabel,
+      boss_name: bossName,
+      boss_role: role,
+    });
+    // 전투 한 판에 한 번만 발송 (era/stage/boss가 바뀔 때만 재트리거)
+  }, [era, stageIndex, bossName]);
+
+  // 부활 프롬프트 노출 로그
+  useEffect(() => {
+    if (phase !== "revive" || !era) return;
+    trackClick("revive_prompt_shown", {
+      era,
+      stage_index: stageIndex,
+    });
+  }, [phase, era, stageIndex]);
 
   const question = questions[currentIndex];
   const chapterDone = useMemo(() => {
@@ -102,11 +135,33 @@ export function BattleScreen() {
       setFlashKey((k) => k + 1);
       setShakeKey((k) => k + 1);
     }
+    if (question && era) {
+      if (idx === null) {
+        trackClick("question_timeout", {
+          era,
+          stage_index: stageIndex,
+          difficulty: question.difficulty,
+          question_id: question.id,
+        });
+      } else {
+        trackClick("press_answer_choice", {
+          era,
+          stage_index: stageIndex,
+          difficulty: question.difficulty,
+          question_id: question.id,
+          correct,
+          time_ms: Math.round(elapsed),
+        });
+      }
+    }
     answer(idx, elapsed);
   };
 
   const handleNext = () => {
     if (!revealed) return;
+    if (era) {
+      trackClick("press_next_room", { era, stage_index: stageIndex });
+    }
     next();
   };
 
@@ -329,18 +384,32 @@ export function BattleScreen() {
           adLoading={ad.loading}
           adIsTest={ad.isTest}
           onWatchAd={() => {
+            trackClick("revive_ad_click", {
+              era,
+              stage_index: stageIndex,
+            });
             ad.show(
               () => {
+                trackClick("revive_ad_rewarded", {
+                  era,
+                  stage_index: stageIndex,
+                });
                 revive(1);
                 setPhase("fighting");
               },
               () => {
-                // 사용자가 광고를 중간에 닫음 → 정상 게임오버로 진행
+                trackClick("revive_ad_dismissed", {
+                  era,
+                  stage_index: stageIndex,
+                });
                 setPhase("outro");
               },
             );
           }}
-          onGiveUp={() => setPhase("outro")}
+          onGiveUp={() => {
+            trackClick("revive_give_up", { era, stage_index: stageIndex });
+            setPhase("outro");
+          }}
         />
         <BattleOutro visible={phase === "outro"} victory={victory} />
       </div>

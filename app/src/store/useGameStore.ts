@@ -31,6 +31,7 @@ interface GameState {
   enemyHP: number;
   enemyMaxHP: number;
   combo: number;
+  maxCombo: number;
   score: number;
   answers: AnswerRecord[];
   revealed: boolean;
@@ -55,6 +56,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   enemyHP: 0,
   enemyMaxHP: 0,
   combo: 0,
+  maxCombo: 0,
   score: 0,
   answers: [],
   revealed: false,
@@ -76,6 +78,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       enemyHP,
       enemyMaxHP: enemyHP,
       combo: 0,
+      maxCombo: 0,
       score: 0,
       answers: [],
       revealed: false,
@@ -99,6 +102,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       revealed: true,
       selectedIndex,
       combo: newCombo,
+      maxCombo: Math.max(state.maxCombo, newCombo),
       score: state.score + damage,
       playerHP: correct ? state.playerHP : Math.max(0, state.playerHP - 1),
       enemyHP: correct ? Math.max(0, state.enemyHP - 1) : state.enemyHP,
@@ -167,6 +171,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       enemyHP: 0,
       enemyMaxHP: 0,
       combo: 0,
+      maxCombo: 0,
       score: 0,
       answers: [],
       revealed: false,
