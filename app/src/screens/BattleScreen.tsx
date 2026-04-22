@@ -16,7 +16,7 @@ import { Timer } from "../components/Timer";
 import { ERA_THEME } from "../data/bosses";
 import { roleOf } from "../data/roles";
 import { STAGE_DEFS, stageTitle } from "../data/stages";
-import { useRewardedAd } from "../hooks/useRewardedAd";
+import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { GAME_CONSTANTS, useGameStore } from "../store/useGameStore";
@@ -44,7 +44,7 @@ export function BattleScreen() {
     revive,
   } = useGameStore();
 
-  const ad = useRewardedAd();
+  const ad = useInterstitialAd();
   const [phase, setPhase] = useState<Phase>("intro");
   const [hitKey, setHitKey] = useState(0);
   const [missKey, setMissKey] = useState(0);

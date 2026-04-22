@@ -6,15 +6,13 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * 보상형 광고 그룹 ID.
+ * 전면 광고 그룹 ID.
  *
- * - 테스트용: `ait-ad-test-rewarded-id`
+ * - 테스트용: `ait-ad-test-interstitial-id`
  *   (https://developers-apps-in-toss.toss.im/ads/develop.html#테스트하기)
- *   개발/샌드박스 환경에서 이 ID로 호출하면 토스 SDK가 실제 테스트 광고를
- *   서빙해줘요.
- * - 프로덕션: 앱인토스 콘솔 → 수익화 → 인앱 광고에서 **리워드형**으로 발급한
- *   광고 그룹 ID를 `PROD_AD_GROUP_ID`에 그대로 붙이면 돼요. 광고 그룹 ID는
- *   공개 식별자라 git에 커밋해도 보안상 문제 없어요.
+ * - 프로덕션: 앱인토스 콘솔 → 수익화 → 인앱 광고에서 **전면형**으로 발급한
+ *   광고 그룹 ID를 `PROD_AD_GROUP_ID`에 붙이면 돼요. 리워드형 ID로는 전면
+ *   광고를 서빙할 수 없어서 새 ID 발급이 필요해요.
  *
  * 런타임에 다음 경우에는 **자동으로 테스트 ID**로 전환되어 실수로 개발 중
  * 실광고가 노출되는 것을 막아줘요:
@@ -22,8 +20,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *   - 앱인토스 샌드박스 환경 런타임
  *   - `PROD_AD_GROUP_ID`가 빈 값일 때
  */
-const TEST_AD_GROUP_ID = "ait-ad-test-rewarded-id";
-const PROD_AD_GROUP_ID = "ait.v2.live.d3b23cda40cf4e7a";
+const TEST_AD_GROUP_ID = "ait-ad-test-interstitial-id";
+const PROD_AD_GROUP_ID = "ait.v2.live.2c985bf1e61a4ac2";
 
 function resolveAdGroupId(): { id: string; isTest: boolean } {
   if (!PROD_AD_GROUP_ID) return { id: TEST_AD_GROUP_ID, isTest: true };
@@ -75,58 +73,68 @@ function sdkIsAvailable(): boolean {
   );
 }
 
-export function useRewardedAd() {
+export function useInterstitialAd() {
   const [state, setState] = useState<AdState>("loading");
   const [adGroupInfo] = useState(() => resolveAdGroupId());
   const adGroupId = adGroupInfo.id;
   /** show()을 호출했을 때 아직 ready가 아니면 load 완료 후 자동 show */
   const pendingShowRef = useRef<{
-    onReward: () => void;
-    onDismissed?: () => void;
+    onWatched: () => void;
+    onFailed?: () => void;
   } | null>(null);
 
   const showLoadedAd = useCallback(
-    (onReward: () => void, onDismissed?: () => void) => {
+    (onWatched: () => void, onFailed?: () => void) => {
       if (!safeIsSupported(showFullScreenAd)) {
-        onDismissed?.();
+        onFailed?.();
         return;
       }
       setState("showing");
-      let rewarded = false;
+      let settled = false;
+      const preloadNext = () => {
+        if (!sdkIsAvailable()) return;
+        safeCall(loadFullScreenAd, {
+          options: { adGroupId },
+          onEvent: (e) => {
+            if (e.type === "loaded") setState("ready");
+          },
+          onError: () => setState("error"),
+        });
+      };
       const result = safeCall(showFullScreenAd, {
         options: { adGroupId },
         onEvent: (event) => {
           switch (event.type) {
-            case "userEarnedReward":
-              rewarded = true;
-              onReward();
-              break;
             case "dismissed":
+              setState("loading");
+              preloadNext();
+              if (settled) break;
+              settled = true;
+              onWatched();
+              break;
             case "failedToShow":
               setState("loading");
-              // 다음 광고 미리 로드
-              if (sdkIsAvailable()) {
-                safeCall(loadFullScreenAd, {
-                  options: { adGroupId },
-                  onEvent: (e) => {
-                    if (e.type === "loaded") setState("ready");
-                  },
-                  onError: () => setState("error"),
-                });
-              }
-              if (!rewarded) onDismissed?.();
+              preloadNext();
+              if (settled) break;
+              settled = true;
+              onFailed?.();
               break;
           }
         },
         onError: (err) => {
           console.warn("[ad] show failed", err);
           setState("error");
-          if (!rewarded) onDismissed?.();
+          if (settled) return;
+          settled = true;
+          onFailed?.();
         },
       });
       if (result === null) {
         setState("unsupported");
-        onDismissed?.();
+        if (!settled) {
+          settled = true;
+          onFailed?.();
+        }
       }
     },
     [adGroupId],
@@ -147,7 +155,7 @@ export function useRewardedAd() {
           const pending = pendingShowRef.current;
           if (pending) {
             pendingShowRef.current = null;
-            showLoadedAd(pending.onReward, pending.onDismissed);
+            showLoadedAd(pending.onWatched, pending.onFailed);
           }
         }
       },
@@ -156,7 +164,7 @@ export function useRewardedAd() {
         setState("error");
         const pending = pendingShowRef.current;
         pendingShowRef.current = null;
-        pending?.onDismissed?.();
+        pending?.onFailed?.();
       },
     });
     if (unregister === null) {
@@ -167,21 +175,21 @@ export function useRewardedAd() {
   }, [adGroupId, showLoadedAd]);
 
   const show = useCallback(
-    (onReward: () => void, onDismissed?: () => void) => {
+    (onWatched: () => void, onFailed?: () => void) => {
       if (!sdkIsAvailable()) {
-        onDismissed?.();
+        onFailed?.();
         return;
       }
       if (state === "ready") {
-        showLoadedAd(onReward, onDismissed);
+        showLoadedAd(onWatched, onFailed);
         return;
       }
       if (state === "loading") {
         // 로드 완료를 기다려서 자동으로 show
-        pendingShowRef.current = { onReward, onDismissed };
+        pendingShowRef.current = { onWatched, onFailed };
         return;
       }
-      onDismissed?.();
+      onFailed?.();
     },
     [state, showLoadedAd],
   );
