@@ -23,7 +23,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *   - `PROD_AD_GROUP_ID`가 빈 값일 때
  */
 const TEST_AD_GROUP_ID = "ait-ad-test-rewarded-id";
-const PROD_AD_GROUP_ID = ""; // TODO: 콘솔에서 발급한 리워드 광고 그룹 ID 붙여넣기
+const PROD_AD_GROUP_ID = "ait.v2.live.d3b23cda40cf4e7a";
 
 function resolveAdGroupId(): { id: string; isTest: boolean } {
   if (!PROD_AD_GROUP_ID) return { id: TEST_AD_GROUP_ID, isTest: true };
