@@ -36,10 +36,12 @@ interface GameState {
   revealed: boolean;
   selectedIndex: number | null;
   lastResolution: LastResolution | null;
+  reviveCount: number;
 
   startBattle: (era: Era, stageIndex: number) => void;
   answer: (selectedIndex: number | null, timeMs: number) => void;
   next: () => void;
+  revive: (hpRestore?: number) => void;
   reset: () => void;
 }
 
@@ -58,6 +60,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   revealed: false,
   selectedIndex: null,
   lastResolution: null,
+  reviveCount: 0,
 
   startBattle: (era, stageIndex) => {
     const stage = getStage(stageIndex);
@@ -78,6 +81,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       revealed: false,
       selectedIndex: null,
       lastResolution: null,
+      reviveCount: 0,
     });
   },
 
@@ -141,6 +145,17 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
   },
 
+  revive: (hpRestore = 1) => {
+    const state = get();
+    set({
+      playerHP: Math.max(hpRestore, state.playerHP),
+      reviveCount: state.reviveCount + 1,
+      revealed: false,
+      selectedIndex: null,
+      lastResolution: null,
+    });
+  },
+
   reset: () =>
     set({
       era: null,
@@ -157,6 +172,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       revealed: false,
       selectedIndex: null,
       lastResolution: null,
+      reviveCount: 0,
     }),
 }));
 

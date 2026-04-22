@@ -5,18 +5,20 @@ import { BattleOutro } from "../components/BattleOutro";
 import { ChoiceButton } from "../components/ChoiceButton";
 import { ComboBadge } from "../components/ComboBadge";
 import { DungeonBackground } from "../components/DungeonBackground";
-import { EnemyPortrait } from "../components/EnemyPortrait";
+import { EnemyScene } from "../components/EnemyScene";
 import { FloatingDamage } from "../components/FloatingDamage";
+import { ReviveOverlay } from "../components/ReviveOverlay";
 import { RoomProgress } from "../components/RoomProgress";
 import { SegmentedHPBar } from "../components/SegmentedHPBar";
 import { SpeechBubble } from "../components/SpeechBubble";
 import { Timer } from "../components/Timer";
 import { ERA_THEME } from "../data/bosses";
 import { STAGE_DEFS, stageTitle } from "../data/stages";
+import { useRewardedAd } from "../hooks/useRewardedAd";
 import { useAppStore } from "../store/useAppStore";
 import { GAME_CONSTANTS, useGameStore } from "../store/useGameStore";
 
-type Phase = "intro" | "fighting" | "outro";
+type Phase = "intro" | "fighting" | "revive" | "outro";
 
 export function BattleScreen() {
   const navigate = useAppStore((s) => s.navigate);
@@ -33,10 +35,13 @@ export function BattleScreen() {
     revealed,
     selectedIndex,
     lastResolution,
+    reviveCount,
     answer,
     next,
+    revive,
   } = useGameStore();
 
+  const ad = useRewardedAd();
   const [phase, setPhase] = useState<Phase>("intro");
   const [hitKey, setHitKey] = useState(0);
   const [missKey, setMissKey] = useState(0);
@@ -58,13 +63,18 @@ export function BattleScreen() {
     return false;
   }, [playerHP, enemyHP, questions.length]);
 
-  // 챕터 종료 → outro → result
+  // 챕터 종료 → (1회 부활 기회) → outro → result
   useEffect(() => {
     if (phase !== "fighting") return;
     if (!chapterDone) return;
+    // 플레이어만 쓰러지고 적은 살아있으면, 챕터당 한 번 부활 기회
+    if (playerHP <= 0 && enemyHP > 0 && reviveCount === 0) {
+      const t = setTimeout(() => setPhase("revive"), 450);
+      return () => clearTimeout(t);
+    }
     const outroTimer = setTimeout(() => setPhase("outro"), 450);
     return () => clearTimeout(outroTimer);
-  }, [chapterDone, phase]);
+  }, [chapterDone, phase, playerHP, enemyHP, reviveCount]);
 
   useEffect(() => {
     if (phase !== "outro") return;
@@ -166,7 +176,7 @@ export function BattleScreen() {
             position: "relative",
           }}
         >
-          <EnemyPortrait
+          <EnemyScene
             era={era}
             name={bossName}
             hitKey={hitKey}
@@ -298,6 +308,25 @@ export function BattleScreen() {
           bossName={bossName}
           visible={phase === "intro"}
           onDone={() => setPhase("fighting")}
+        />
+        <ReviveOverlay
+          visible={phase === "revive"}
+          era={era}
+          adReady={ad.ready}
+          adSupported={ad.supported}
+          onWatchAd={() => {
+            ad.show(
+              () => {
+                revive(1);
+                setPhase("fighting");
+              },
+              () => {
+                // 사용자가 광고를 중간에 닫음 → 정상 게임오버로 진행
+                setPhase("outro");
+              },
+            );
+          }}
+          onGiveUp={() => setPhase("outro")}
         />
         <BattleOutro visible={phase === "outro"} victory={victory} />
       </div>

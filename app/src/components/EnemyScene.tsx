@@ -1,5 +1,8 @@
 import { motion } from "framer-motion";
-import { ERA_BOSS_EMOJI, ERA_THEME } from "../data/bosses";
+import { ERA_THEME } from "../data/bosses";
+import { roleOf } from "../data/roles";
+import { EraBackdrop } from "./EraBackdrop";
+import { RoleSilhouette } from "./RoleSilhouette";
 import type { Era } from "../types";
 
 interface Props {
@@ -10,7 +13,7 @@ interface Props {
   critical?: boolean;
 }
 
-export function EnemyPortrait({
+export function EnemyScene({
   era,
   name,
   hitKey = 0,
@@ -18,7 +21,8 @@ export function EnemyPortrait({
   critical = false,
 }: Props) {
   const theme = ERA_THEME[era];
-  const emoji = ERA_BOSS_EMOJI[era];
+  const role = roleOf(era, name);
+
   return (
     <div
       style={{
@@ -58,26 +62,44 @@ export function EnemyPortrait({
         transition={{ duration: 0.5 }}
         style={{
           position: "relative",
-          width: 140,
-          height: 140,
+          width: 160,
+          height: 160,
           borderRadius: "50%",
           background: `radial-gradient(circle at 30% 30%, ${theme.nameBg} 0%, #000 90%)`,
           border: `3px solid ${theme.frameBorder}`,
           boxShadow: `0 0 30px ${theme.frameGlow}, inset 0 0 20px rgba(0,0,0,0.6)`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
           overflow: "hidden",
         }}
       >
-        {/* 아이들 호흡 */}
-        <motion.div
-          animate={{ scale: [1, 1.04, 1], y: [0, -2, 0] }}
-          transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
-          style={{ fontSize: 80, lineHeight: 1 }}
+        {/* 시대 배경 풍경 */}
+        <EraBackdrop era={era} accent={theme.accent} />
+
+        {/* 캐릭터 실루엣 */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            paddingBottom: 4,
+          }}
         >
-          {emoji}
-        </motion.div>
+          <motion.div
+            animate={{ scale: [1, 1.04, 1], y: [0, -2, 0] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "center",
+            }}
+          >
+            <RoleSilhouette role={role} accent={theme.accent} />
+          </motion.div>
+        </div>
+
         {/* 크리티컬 후광 */}
         {critical ? (
           <motion.div
@@ -91,6 +113,7 @@ export function EnemyPortrait({
               background:
                 "radial-gradient(circle, rgba(255,255,0,0.7) 0%, transparent 70%)",
               pointerEvents: "none",
+              zIndex: 3,
             }}
           />
         ) : null}
