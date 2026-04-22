@@ -8,7 +8,9 @@ export default defineConfig({
     icon: "",
   },
   web: {
-    host: "localhost",
+    // 실기기 샌드박스에서 이 값을 참조해요. Wi-Fi가 바뀌면 현재 Mac LAN IP로
+    // 갱신해주세요: `ipconfig getifaddr en0`
+    host: "192.168.35.225",
     port: 5173,
     commands: {
       dev: "vite dev --host",
