@@ -55,9 +55,8 @@ export function BattleScreen() {
     if (questions.length === 0) return false;
     if (playerHP <= 0) return true;
     if (enemyHP <= 0) return true;
-    if (currentIndex >= questions.length) return true;
     return false;
-  }, [playerHP, enemyHP, currentIndex, questions.length]);
+  }, [playerHP, enemyHP, questions.length]);
 
   // 챕터 종료 → outro → result
   useEffect(() => {
@@ -141,8 +140,8 @@ export function BattleScreen() {
               {era} · {stageTitle(STAGE_DEFS[stageIndex])}
             </div>
             <RoomProgress
-              total={questions.length || 5}
-              current={currentIndex}
+              total={enemyMaxHP || 5}
+              current={Math.max(0, enemyMaxHP - enemyHP)}
               accent={theme.accent}
             />
             <div style={{ minWidth: 60, textAlign: "right" }}>
@@ -285,9 +284,7 @@ export function BattleScreen() {
                     boxShadow: `0 0 14px ${theme.frameGlow}`,
                   }}
                 >
-                  {currentIndex + 1 >= questions.length ||
-                  playerHP <= 0 ||
-                  enemyHP <= 0
+                  {playerHP <= 0 || enemyHP <= 0
                     ? "⚔ 챕터 종료"
                     : "다음 방 ▶"}
                 </button>

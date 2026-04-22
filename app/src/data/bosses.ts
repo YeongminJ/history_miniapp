@@ -147,7 +147,7 @@ function tryBuildStage(
   era: Era,
   figure: string,
   stage: StageDef,
-): Question[] | null {
+): { profileQuestions: Question[]; fullPool: Question[] } | null {
   const pool = getFigureQuestions(era, figure);
   if (pool.length === 0) return null;
   const picked: Question[] = [];
@@ -164,19 +164,27 @@ function tryBuildStage(
     taken.forEach((q) => used.add(q.id));
     picked.push(...taken);
   }
-  return picked.sort(
+  const profileQuestions = picked.sort(
     (a, b) =>
       DIFFICULTY_ORDER.indexOf(a.difficulty) -
       DIFFICULTY_ORDER.indexOf(b.difficulty),
   );
+  // 여분: 보스 태그 문제 중 아직 안 쓴 것들을 난이도 순으로 뒤에 붙임
+  const extra = pool
+    .filter((q) => !used.has(q.id))
+    .sort(
+      (a, b) =>
+        DIFFICULTY_ORDER.indexOf(a.difficulty) -
+        DIFFICULTY_ORDER.indexOf(b.difficulty),
+    );
+  return { profileQuestions, fullPool: [...profileQuestions, ...extra] };
 }
 
 /**
  * 스테이지에 맞는 보스와 문제를 함께 선정.
- * 1) 해당 시대 인물 풀을 셔플
- * 2) 인물별로 스테이지 난이도 프로필을 만족할 수 있는지 시도
- * 3) 첫 번째로 만족하는 인물을 보스로 지정
- * 4) 아무도 못 만족하면 시대 아키타입 이름으로 fallback
+ * - 앞쪽 문제: 스테이지 난이도 프로필대로 (easy → hard 정렬)
+ * - 뒤쪽 문제: 같은 보스의 태그 문제로 확장 (HP가 남은 경우 이어서 풀이)
+ * - 보스 매칭 실패 시 시대 아키타입 이름으로 fallback
  */
 export function pickBossAndQuestions(
   era: Era,
@@ -184,9 +192,13 @@ export function pickBossAndQuestions(
 ): { name: string; questions: Question[]; fallback: boolean } {
   const shuffled = [...FIGURE_POOL[era]].sort(() => Math.random() - 0.5);
   for (const figure of shuffled) {
-    const questions = tryBuildStage(era, figure, stage);
-    if (questions) {
-      return { name: figure, questions, fallback: false };
+    const built = tryBuildStage(era, figure, stage);
+    if (built) {
+      return {
+        name: figure,
+        questions: built.fullPool,
+        fallback: false,
+      };
     }
   }
   // fallback: generic archetype + free pool
@@ -204,15 +216,46 @@ export function pickBossAndQuestions(
     taken.forEach((q) => used.add(q.id));
     genericPicked.push(...taken);
   }
-  return {
-    name: fallbackName,
-    questions: genericPicked.sort(
+  const extra = byEra[era]
+    .filter((q) => !used.has(q.id))
+    .sort(() => Math.random() - 0.5);
+  const full = [
+    ...genericPicked.sort(
       (a, b) =>
         DIFFICULTY_ORDER.indexOf(a.difficulty) -
         DIFFICULTY_ORDER.indexOf(b.difficulty),
     ),
+    ...extra,
+  ];
+  return {
+    name: fallbackName,
+    questions: full,
     fallback: true,
   };
+}
+
+/**
+ * 전투 중 문제 풀이 진행으로 거의 소진되었을 때 추가 문제를 공급.
+ * 우선 보스 태그 풀 → 같은 시대 풀 → 셔플 순.
+ */
+export function getSupplementQuestions(
+  era: Era,
+  bossName: string,
+  excludeIds: Set<string>,
+  count: number,
+): Question[] {
+  const isFigure = FIGURE_POOL[era].includes(bossName);
+  const bossPool = isFigure
+    ? getFigureQuestions(era, bossName).filter((q) => !excludeIds.has(q.id))
+    : [];
+  const shuffledBossPool = [...bossPool].sort(() => Math.random() - 0.5);
+  if (shuffledBossPool.length >= count) {
+    return shuffledBossPool.slice(0, count);
+  }
+  const eraExtras = byEra[era]
+    .filter((q) => !excludeIds.has(q.id) && !bossPool.includes(q))
+    .sort(() => Math.random() - 0.5);
+  return [...shuffledBossPool, ...eraExtras].slice(0, count);
 }
 
 export const ERA_BOSS_EMOJI: Record<Era, string> = {

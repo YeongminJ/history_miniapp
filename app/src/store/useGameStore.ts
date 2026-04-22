@@ -1,7 +1,13 @@
 import { create } from "zustand";
-import { pickBossAndQuestions } from "../data/bosses";
+import {
+  getSupplementQuestions,
+  pickBossAndQuestions,
+} from "../data/bosses";
 import { getStage } from "../data/stages";
 import type { AnswerRecord, Era, Question } from "../types";
+
+const SUPPLEMENT_THRESHOLD = 3;
+const SUPPLEMENT_SIZE = 10;
 
 const MAX_PLAYER_HP = 3;
 const BASE_DAMAGE = 20;
@@ -56,6 +62,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   startBattle: (era, stageIndex) => {
     const stage = getStage(stageIndex);
     const { name, questions } = pickBossAndQuestions(era, stage);
+    const enemyHP = stage.minCorrectToClear;
     set({
       era,
       stageIndex,
@@ -63,8 +70,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       questions,
       currentIndex: 0,
       playerHP: MAX_PLAYER_HP,
-      enemyHP: questions.length,
-      enemyMaxHP: questions.length,
+      enemyHP,
+      enemyMaxHP: enemyHP,
       combo: 0,
       score: 0,
       answers: [],
@@ -108,10 +115,29 @@ export const useGameStore = create<GameState>((set, get) => ({
   next: () => {
     const state = get();
     const nextIndex = state.currentIndex + 1;
+    let questions = state.questions;
+    // 남은 문제가 적으면 보스·시대 풀에서 이어붙여 공급
+    if (
+      state.era &&
+      state.bossName &&
+      questions.length - nextIndex < SUPPLEMENT_THRESHOLD
+    ) {
+      const usedIds = new Set(questions.map((q) => q.id));
+      const extra = getSupplementQuestions(
+        state.era,
+        state.bossName,
+        usedIds,
+        SUPPLEMENT_SIZE,
+      );
+      if (extra.length > 0) {
+        questions = [...questions, ...extra];
+      }
+    }
     set({
       currentIndex: nextIndex,
       revealed: false,
       selectedIndex: null,
+      questions,
     });
   },
 
