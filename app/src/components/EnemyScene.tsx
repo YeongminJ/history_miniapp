@@ -29,19 +29,19 @@ export function EnemyScene({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: 10,
+        gap: 6,
       }}
     >
       {/* 이름 배너 */}
       <div
         style={{
           position: "relative",
-          padding: "6px 18px",
+          padding: "4px 14px",
           background: theme.nameBg,
           border: `1.5px solid ${theme.frameBorder}`,
-          borderRadius: 20,
+          borderRadius: 18,
           color: theme.accent,
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: 800,
           letterSpacing: 1,
           boxShadow: `0 0 14px ${theme.frameGlow}`,
@@ -62,12 +62,12 @@ export function EnemyScene({
         transition={{ duration: 0.5 }}
         style={{
           position: "relative",
-          width: 160,
-          height: 160,
+          width: 104,
+          height: 104,
           borderRadius: "50%",
           background: `radial-gradient(circle at 30% 30%, ${theme.nameBg} 0%, #000 90%)`,
-          border: `3px solid ${theme.frameBorder}`,
-          boxShadow: `0 0 30px ${theme.frameGlow}, inset 0 0 20px rgba(0,0,0,0.6)`,
+          border: `2.5px solid ${theme.frameBorder}`,
+          boxShadow: `0 0 22px ${theme.frameGlow}, inset 0 0 16px rgba(0,0,0,0.6)`,
           overflow: "hidden",
         }}
       >

@@ -51,6 +51,7 @@ export function BattleScreen() {
   const [flashKey, setFlashKey] = useState(0);
   const [shakeKey, setShakeKey] = useState(0);
   const questionStart = useRef<number>(performance.now());
+  const nextButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const theme = era ? ERA_THEME[era] : null;
 
@@ -115,6 +116,17 @@ export function BattleScreen() {
     const t = setTimeout(() => navigate("result"), 1600);
     return () => clearTimeout(t);
   }, [phase, navigate]);
+
+  useEffect(() => {
+    if (!revealed) return;
+    const id = window.setTimeout(() => {
+      nextButtonRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 280);
+    return () => window.clearTimeout(id);
+  }, [revealed]);
 
   if (!era || !theme || !bossName) {
     return (
@@ -185,13 +197,13 @@ export function BattleScreen() {
           flexDirection: "column",
         }}
       >
-        <div style={{ padding: "60px 20px 8px" }}>
+        <div style={{ padding: "28px 20px 6px" }}>
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: 10,
+              marginBottom: 6,
               color: "#FFFFFF",
             }}
           >
@@ -225,7 +237,7 @@ export function BattleScreen() {
 
         <div
           style={{
-            padding: "8px 20px",
+            padding: "4px 20px",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
@@ -262,7 +274,7 @@ export function BattleScreen() {
         </div>
 
         {question && fightingReady ? (
-          <div style={{ padding: "12px 20px 0" }}>
+          <div style={{ padding: "6px 20px 0" }}>
             <Timer
               durationMs={GAME_CONSTANTS.QUESTION_TIME_MS}
               running={!revealed}
@@ -274,10 +286,10 @@ export function BattleScreen() {
 
         <div
           style={{
-            padding: "12px 20px 16px",
+            padding: "8px 20px 10px",
             display: "flex",
             flexDirection: "column",
-            gap: 10,
+            gap: 8,
             flex: 1,
           }}
         >
@@ -297,7 +309,7 @@ export function BattleScreen() {
         {/* 하단 내 HP (하트) + 플레이어 피격 팝업 */}
         <div
           style={{
-            padding: "0 20px 16px",
+            padding: "0 20px 10px",
             position: "relative",
           }}
         >
@@ -345,6 +357,7 @@ export function BattleScreen() {
               />
               <div style={{ marginTop: 14 }}>
                 <button
+                  ref={nextButtonRef}
                   type="button"
                   onClick={handleNext}
                   style={{
