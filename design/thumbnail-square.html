@@ -1,0 +1,154 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        background: #3E2723;
+      }
+      body {
+        width: 1000px;
+        height: 1000px;
+        overflow: hidden;
+        font-family: "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+      }
+      .canvas {
+        position: relative;
+        width: 1000px;
+        height: 1000px;
+        background:
+          radial-gradient(ellipse at 30% 18%, #8D6E63 0%, transparent 48%),
+          linear-gradient(180deg, #5D4037 0%, #4E342E 50%, #3E2723 100%);
+        overflow: hidden;
+      }
+      .canvas::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.05;
+        background-image:
+          repeating-linear-gradient(45deg, #FFFFFF 0 2px, transparent 2px 28px),
+          repeating-linear-gradient(-45deg, #FFFFFF 0 2px, transparent 2px 28px);
+        pointer-events: none;
+      }
+      .inner {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 120px 80px;
+        color: #FFFFFF;
+        text-align: center;
+      }
+      .tag {
+        display: inline-block;
+        padding: 10px 28px;
+        background: rgba(255, 193, 7, 0.18);
+        border: 2px solid rgba(255, 193, 7, 0.65);
+        color: #FFD54F;
+        border-radius: 999px;
+        font-weight: 800;
+        letter-spacing: 6px;
+        font-size: 26px;
+        margin-bottom: 40px;
+      }
+      .crown {
+        width: 200px;
+        height: 120px;
+        filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.55))
+          drop-shadow(0 0 28px rgba(255, 193, 7, 0.4));
+        margin-bottom: 10px;
+      }
+      .title {
+        font-family: "Nanum Myeongjo", "AppleMyungjo", "Apple SD Gothic Neo",
+          "Noto Serif KR", serif;
+        font-weight: 900;
+        font-size: 220px;
+        line-height: 1;
+        letter-spacing: -6px;
+        white-space: nowrap;
+        background: linear-gradient(180deg, #FFF8E1 0%, #FFC107 55%, #FF8F00 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
+        margin-top: 6px;
+      }
+      .sub {
+        font-size: 38px;
+        font-weight: 800;
+        color: #FFFFFF;
+        margin-top: 26px;
+        letter-spacing: -1px;
+      }
+      .desc {
+        font-size: 26px;
+        color: rgba(255, 255, 255, 0.75);
+        margin-top: 20px;
+        line-height: 1.45;
+        font-weight: 500;
+      }
+      .features {
+        display: flex;
+        gap: 14px;
+        margin-top: 40px;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      .feat {
+        padding: 14px 22px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1.5px solid rgba(255, 255, 255, 0.22);
+        border-radius: 999px;
+        font-size: 22px;
+        font-weight: 700;
+        color: #FFD54F;
+        letter-spacing: 0.5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="canvas">
+      <div class="inner">
+        <div class="tag">한국사 RPG 퀴즈</div>
+        <svg class="crown" viewBox="0 0 220 135" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFF8E1" />
+              <stop offset="50%" stop-color="#FFC107" />
+              <stop offset="100%" stop-color="#FF8F00" />
+            </linearGradient>
+          </defs>
+          <path
+            d="M 12 118 L 28 35 L 66 86 L 110 12 L 154 86 L 192 35 L 208 118 Z"
+            fill="url(#g)"
+            stroke="#3E2723"
+            stroke-width="4"
+            stroke-linejoin="round"
+          />
+          <rect x="10" y="118" width="200" height="14" rx="3"
+            fill="url(#g)" stroke="#3E2723" stroke-width="4" />
+          <circle cx="28" cy="46" r="7" fill="#E91E63" stroke="#3E2723" stroke-width="2" />
+          <circle cx="110" cy="26" r="10" fill="#E91E63" stroke="#3E2723" stroke-width="2" />
+          <circle cx="192" cy="46" r="7" fill="#E91E63" stroke="#3E2723" stroke-width="2" />
+        </svg>
+        <div class="title">역사왕</div>
+        <div class="sub">역사 속 인물과 맞붙는 던전 퀴즈</div>
+        <div class="desc">
+          고대부터 현대까지 1,000문제<br />
+          시대별 던전을 공략하고 콤보로 점수를 쌓으세요
+        </div>
+        <div class="features">
+          <div class="feat">⚔ 5시대 × 5스테이지</div>
+          <div class="feat">👑 1,000문제</div>
+          <div class="feat">🔥 콤보·크리티컬</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
