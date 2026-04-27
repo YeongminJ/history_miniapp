@@ -7,6 +7,7 @@ import {
   isStageUnlocked,
   stageTitle,
 } from "../data/stages";
+import { shareResult } from "../lib/share";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useGameStore } from "../store/useGameStore";
@@ -92,6 +93,33 @@ export function ResultScreen() {
     trackClick("press_retry_stage", { era, stage_index: stageIndex });
     useGameStore.getState().startBattle(era, stageIndex);
     selectStage(stageIndex);
+  };
+
+  const handleShare = async () => {
+    if (!era || !stage) return;
+    const correctOnly = answers.filter((a) => a.correct).map((a) => a.question);
+    const fallback = answers.map((a) => a.question);
+    const pool = correctOnly.length > 0 ? correctOnly : fallback;
+    trackClick("press_share_result", {
+      era,
+      stage_index: stageIndex,
+      cleared,
+      pool: correctOnly.length > 0 ? "correct" : "all",
+      pool_size: pool.length,
+    });
+    const ok = await shareResult({
+      era,
+      stageLabel: stageTitle(stage),
+      cleared,
+      score,
+      accuracy,
+      pickFrom: pool,
+    });
+    trackClick("share_result_result", {
+      era,
+      stage_index: stageIndex,
+      success: ok,
+    });
   };
 
   const handleNextStage = () => {
@@ -277,6 +305,17 @@ export function ResultScreen() {
               다시 도전
             </Button>
           )}
+          {answers.length > 0 ? (
+            <Button
+              size="large"
+              display="full"
+              variant="weak"
+              color="primary"
+              onClick={handleShare}
+            >
+              {cleared ? "🎁 친구에게 자랑하기" : "🎁 친구에게 도전장"}
+            </Button>
+          ) : null}
           <div style={{ display: "flex", gap: 10 }}>
             <Button
               size="large"
