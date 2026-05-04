@@ -77,6 +77,26 @@ export function HomeScreen() {
         >
           던전 입장
         </Button>
+
+        <button
+          type="button"
+          onClick={() => {
+            trackClick("press_open_settings");
+            navigate("settings");
+          }}
+          style={{
+            width: "100%",
+            marginTop: 12,
+            padding: "12px",
+            background: "transparent",
+            border: "none",
+            color: "#757575",
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          ⚙ 학습 알림 설정
+        </button>
       </div>
     </div>
   );

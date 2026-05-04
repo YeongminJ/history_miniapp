@@ -5,6 +5,7 @@ import { BattleScreen } from "./screens/BattleScreen";
 import { ChapterMapScreen } from "./screens/ChapterMapScreen";
 import { HomeScreen } from "./screens/HomeScreen";
 import { ResultScreen } from "./screens/ResultScreen";
+import { SettingsScreen } from "./screens/SettingsScreen";
 import { StageScreen } from "./screens/StageScreen";
 import { useAppStore } from "./store/useAppStore";
 import { useAuthStore } from "./store/useAuthStore";
@@ -35,6 +36,7 @@ function App() {
       {screen === "stage" ? <StageScreen /> : null}
       {screen === "battle" ? <BattleScreen /> : null}
       {screen === "result" ? <ResultScreen /> : null}
+      {screen === "settings" ? <SettingsScreen /> : null}
     </ErrorBoundary>
   );
 }

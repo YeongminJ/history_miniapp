@@ -28,4 +28,10 @@ export interface AnswerRecord {
   timeMs: number;
 }
 
-export type Screen = "home" | "chapter" | "stage" | "battle" | "result";
+export type Screen =
+  | "home"
+  | "chapter"
+  | "stage"
+  | "battle"
+  | "result"
+  | "settings";
