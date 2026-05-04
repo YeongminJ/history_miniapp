@@ -1,4 +1,5 @@
 import { Analytics } from "@apps-in-toss/web-framework";
+import { useAuthStore } from "../store/useAuthStore";
 
 /**
  * Primitive 값만 이벤트 파라미터로 허용 (SDK 제약).
@@ -10,8 +11,10 @@ export type TrackParams = Record<
 >;
 
 function cleanParams(params?: TrackParams): Record<string, string | number | boolean> {
-  if (!params) return {};
   const out: Record<string, string | number | boolean> = {};
+  const hash = useAuthStore.getState().hash;
+  if (hash) out.user_hash = hash;
+  if (!params) return out;
   for (const [k, v] of Object.entries(params)) {
     if (v === undefined || v === null) continue;
     out[k] = v;
