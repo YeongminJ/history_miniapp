@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { appLogin } from "@apps-in-toss/web-framework";
+import { useEffect, useRef } from "react";
 import { AuthSplash } from "./components/AuthSplash";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { BattleScreen } from "./screens/BattleScreen";
@@ -18,12 +19,7 @@ const REMINDER_API_BASE = (
   (import.meta.env.VITE_REMINDER_API_BASE as string | undefined) ?? ""
 ).replace(/\/$/, "");
 
-/**
- * 서버에 이미 `toss_user_key` 매핑이 있는 사용자면 온보딩 자동 완료.
- * (다른 deploymentId/스킴에서 진입하면 localStorage가 격리될 수 있어
- *  로컬 `completed` 가 false라도 서버 기준으로 회복.)
- */
-async function hydrateOnboardingFromServer(hash: string): Promise<boolean> {
+async function checkServerMapping(hash: string): Promise<boolean> {
   if (!REMINDER_API_BASE) return false;
   try {
     const res = await fetch(
@@ -40,8 +36,38 @@ async function hydrateOnboardingFromServer(hash: string): Promise<boolean> {
       | null;
     return !!data?.isMapped;
   } catch (err) {
-    console.warn("[onboarding-hydrate] failed", err);
+    console.warn("[mapping-check] failed", err);
     return false;
+  }
+}
+
+/**
+ * Stale toss_user_key 회복 — cron 이 4010 받고 서버에서 toss_user_key 를 NULL 로 비웠을 때,
+ * 클라에서 1회 silent appLogin 해서 재매핑. 이미 동의한 사용자는 토스 UI 안 뜨고 즉시 코드 발급.
+ */
+async function recoverMapping(hash: string): Promise<void> {
+  if (!REMINDER_API_BASE) return;
+  if (typeof appLogin !== "function") return;
+  let result: { authorizationCode?: string; referrer?: string } | null;
+  try {
+    result = await appLogin();
+  } catch (err) {
+    console.warn("[recovery] appLogin failed", err);
+    return;
+  }
+  if (!result?.authorizationCode || !result?.referrer) return;
+  try {
+    await fetch(`${REMINDER_API_BASE}/api/auth/migration/link`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        hash,
+        authorizationCode: result.authorizationCode,
+        referrer: result.referrer,
+      }),
+    });
+  } catch (err) {
+    console.warn("[recovery] link failed", err);
   }
 }
 
@@ -52,19 +78,27 @@ function App() {
   const authInit = useAuthStore((s) => s.init);
   const onboardingDone = useOnboardingStore((s) => s.completed);
   const completeOnboarding = useOnboardingStore((s) => s.complete);
+  const mappingCheckedRef = useRef(false);
 
   useEffect(() => {
     authInit();
   }, [authInit]);
 
-  // hash 로드된 후, 서버 매핑 상태로 온보딩 자동 완료 시도.
+  // hash 로드 후 서버 매핑 상태에 따라 분기 (1회만).
+  // - onboarding 미완료 + isMapped → 자동 완료 (다른 deeplink/스킴에서 진입한 경우)
+  // - onboarding 완료 + !isMapped → silent appLogin 으로 재매핑 (cron 이 4010 받아 stale 처리한 키)
   useEffect(() => {
-    if (!authHash || onboardingDone) return;
+    if (!authHash) return;
+    if (mappingCheckedRef.current) return;
+    mappingCheckedRef.current = true;
     let cancelled = false;
     void (async () => {
-      const isMapped = await hydrateOnboardingFromServer(authHash);
-      if (!cancelled && isMapped) {
+      const isMapped = await checkServerMapping(authHash);
+      if (cancelled) return;
+      if (!onboardingDone && isMapped) {
         completeOnboarding();
+      } else if (onboardingDone && !isMapped) {
+        await recoverMapping(authHash);
       }
     })();
     return () => {

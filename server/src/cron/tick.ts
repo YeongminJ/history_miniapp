@@ -153,6 +153,28 @@ export async function runTick(
       result = { ok: false, error: msg };
     }
 
+    // 4010 "인증 정보를 찾을 수 없어요" — userKey 가 토스에서 stale 됨
+    // (사용자가 미니앱 연결 끊었거나 grant 만료). NULL 처리해 다음 진입 시
+    // 클라가 silent re-OAuth 해서 재매핑하도록 유도.
+    if (!result.ok && result.error?.includes('"errorCode":"4010"')) {
+      try {
+        await db
+          .update(users)
+          .set({ tossUserKey: null, updatedAt: sentTime })
+          .where(eq(users.userKey, plan.userHash));
+        console.warn(
+          "[tick] 4010 → cleared toss_user_key for re-OAuth",
+          plan.userHash,
+        );
+      } catch (err) {
+        console.error(
+          "[tick] failed to clear stale toss_user_key",
+          plan.userHash,
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
     try {
       await db
         .insert(notifications)
