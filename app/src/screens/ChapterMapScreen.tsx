@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { ERAS, byEra } from "../data/quiz";
 import { STAGES_PER_ERA } from "../data/stages";
+import { useAndroidBack } from "../hooks/useAndroidBack";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useProgressStore } from "../store/useProgressStore";
@@ -15,6 +16,11 @@ export function ChapterMapScreen() {
   useEffect(() => {
     trackScreen("screen_chapter_map");
   }, []);
+
+  useAndroidBack(() => {
+    trackClick("press_android_back", { from: "chapter_map" });
+    goHome();
+  });
 
   return (
     <div style={{ paddingBottom: 40 }}>

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { ERA_THEME } from "../data/bosses";
 import { roleOf } from "../data/roles";
+import { getBossVariant } from "../lib/bossVariant";
 import { EraBackdrop } from "./EraBackdrop";
 import { RoleSilhouette } from "./RoleSilhouette";
 import type { Era } from "../types";
@@ -22,6 +23,7 @@ export function EnemyScene({
 }: Props) {
   const theme = ERA_THEME[era];
   const role = roleOf(era, name);
+  const variant = getBossVariant(name, role);
 
   return (
     <div
@@ -96,8 +98,33 @@ export function EnemyScene({
               justifyContent: "center",
             }}
           >
-            <RoleSilhouette role={role} accent={theme.accent} />
+            <RoleSilhouette role={role} accent={theme.accent} variant={variant} />
           </motion.div>
+        </div>
+
+        {/* 이름 첫 글자 배지 — 같은 role/변주여도 보스별로 명확히 구분 */}
+        <div
+          style={{
+            position: "absolute",
+            top: 6,
+            right: 6,
+            width: 30,
+            height: 30,
+            borderRadius: "50%",
+            background: theme.nameBg,
+            border: `1.5px solid ${theme.frameBorder}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: theme.accent,
+            fontSize: 14,
+            fontWeight: 900,
+            zIndex: 4,
+            boxShadow: `0 0 8px ${theme.frameGlow}`,
+            letterSpacing: 0,
+          }}
+        >
+          {name.slice(0, 1)}
         </div>
 
         {/* 크리티컬 후광 */}

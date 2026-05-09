@@ -4,6 +4,7 @@ import {
   pickBossAndQuestions,
 } from "../data/bosses";
 import { getStage } from "../data/stages";
+import { useProgressStore } from "./useProgressStore";
 import type { AnswerRecord, Era, Question } from "../types";
 
 const SUPPLEMENT_THRESHOLD = 3;
@@ -66,7 +67,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   startBattle: (era, stageIndex) => {
     const stage = getStage(stageIndex);
-    const { name, questions } = pickBossAndQuestions(era, stage);
+    const seenIds = new Set(useProgressStore.getState().clearedIds);
+    const { name, questions } = pickBossAndQuestions(era, stage, seenIds);
     const enemyHP = stage.minCorrectToClear;
     set({
       era,
@@ -131,11 +133,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       questions.length - nextIndex < SUPPLEMENT_THRESHOLD
     ) {
       const usedIds = new Set(questions.map((q) => q.id));
+      const seenIds = new Set(useProgressStore.getState().clearedIds);
       const extra = getSupplementQuestions(
         state.era,
         state.bossName,
         usedIds,
         SUPPLEMENT_SIZE,
+        seenIds,
       );
       if (extra.length > 0) {
         questions = [...questions, ...extra];

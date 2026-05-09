@@ -6,6 +6,7 @@ import {
   isStageUnlocked,
   stageTitle,
 } from "../data/stages";
+import { useAndroidBack } from "../hooks/useAndroidBack";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useGameStore } from "../store/useGameStore";
@@ -27,6 +28,11 @@ export function StageScreen() {
       cleared_count: (clearedStages[era] ?? []).length,
     });
   }, [era, clearedStages]);
+
+  useAndroidBack(() => {
+    trackClick("press_android_back", { from: "stage_list", era });
+    navigate("chapter");
+  });
 
   if (!era) {
     return (

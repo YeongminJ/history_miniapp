@@ -16,6 +16,7 @@ import { Timer } from "../components/Timer";
 import { ERA_THEME } from "../data/bosses";
 import { roleOf } from "../data/roles";
 import { STAGE_DEFS, stageTitle } from "../data/stages";
+import { useAndroidBack } from "../hooks/useAndroidBack";
 import { useInterstitialAd } from "../hooks/useInterstitialAd";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
@@ -25,6 +26,7 @@ type Phase = "intro" | "fighting" | "revive" | "outro";
 
 export function BattleScreen() {
   const navigate = useAppStore((s) => s.navigate);
+  const backToStages = useAppStore((s) => s.backToStages);
   const {
     era,
     stageIndex,
@@ -42,7 +44,19 @@ export function BattleScreen() {
     answer,
     next,
     revive,
+    reset,
   } = useGameStore();
+
+  useAndroidBack(() => {
+    trackClick("press_android_back", {
+      from: "battle",
+      era,
+      stage_index: stageIndex,
+      current_index: currentIndex,
+    });
+    reset();
+    backToStages();
+  });
 
   const ad = useInterstitialAd();
   const [phase, setPhase] = useState<Phase>("intro");

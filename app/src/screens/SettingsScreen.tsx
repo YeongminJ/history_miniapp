@@ -48,6 +48,8 @@ export function SettingsScreen() {
     if (!authHash) return "잠시 후 다시 시도해 주세요.";
     if (syncStatus === "syncing") return "저장 중…";
     if (syncStatus === "no_endpoint") return "알림 서버 연결 준비 중이에요.";
+    if (syncStatus === "auth_required")
+      return "푸시를 받으려면 토스 로그인이 필요해요. 다시 켜서 로그인해 주세요.";
     if (syncStatus === "error")
       return `오류가 발생했어요${syncMessage ? ` (${syncMessage})` : ""}`;
     if (syncStatus === "ok" && enabled)

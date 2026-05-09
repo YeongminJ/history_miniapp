@@ -143,10 +143,27 @@ function getFigureQuestions(era: Era, figure: string): Question[] {
   return list;
 }
 
+/**
+ * 안 본 문제 우선 + 부족하면 본 것 섞기.
+ * 같은 풀에서 매번 같은 문제가 다시 뽑히는 걸 방지하는 핵심 헬퍼.
+ */
+function takeWithFreshPriority(
+  pool: Question[],
+  seenIds: Set<string>,
+  count: number,
+): Question[] {
+  const fresh = pool.filter((q) => !seenIds.has(q.id));
+  const seen = pool.filter((q) => seenIds.has(q.id));
+  const shuffledFresh = [...fresh].sort(() => Math.random() - 0.5);
+  const shuffledSeen = [...seen].sort(() => Math.random() - 0.5);
+  return [...shuffledFresh, ...shuffledSeen].slice(0, count);
+}
+
 function tryBuildStage(
   era: Era,
   figure: string,
   stage: StageDef,
+  seenIds: Set<string>,
 ): { profileQuestions: Question[]; fullPool: Question[] } | null {
   const pool = getFigureQuestions(era, figure);
   if (pool.length === 0) return null;
@@ -159,8 +176,7 @@ function tryBuildStage(
       (q) => q.difficulty === difficulty && !used.has(q.id),
     );
     if (matching.length < count) return null;
-    const shuffled = [...matching].sort(() => Math.random() - 0.5);
-    const taken = shuffled.slice(0, count);
+    const taken = takeWithFreshPriority(matching, seenIds, count);
     taken.forEach((q) => used.add(q.id));
     picked.push(...taken);
   }
@@ -169,14 +185,17 @@ function tryBuildStage(
       DIFFICULTY_ORDER.indexOf(a.difficulty) -
       DIFFICULTY_ORDER.indexOf(b.difficulty),
   );
-  // 여분: 보스 태그 문제 중 아직 안 쓴 것들을 난이도 순으로 뒤에 붙임
-  const extra = pool
-    .filter((q) => !used.has(q.id))
-    .sort(
-      (a, b) =>
-        DIFFICULTY_ORDER.indexOf(a.difficulty) -
-        DIFFICULTY_ORDER.indexOf(b.difficulty),
-    );
+  // 여분: 보스 태그 문제 중 아직 안 쓴 것들도 안 본 것 우선으로 섞어서 뒤에 붙임
+  const remaining = pool.filter((q) => !used.has(q.id));
+  const freshRemaining = remaining.filter((q) => !seenIds.has(q.id));
+  const seenRemaining = remaining.filter((q) => seenIds.has(q.id));
+  const sortByDifficulty = (a: Question, b: Question) =>
+    DIFFICULTY_ORDER.indexOf(a.difficulty) -
+    DIFFICULTY_ORDER.indexOf(b.difficulty);
+  const extra = [
+    ...freshRemaining.sort(sortByDifficulty),
+    ...seenRemaining.sort(sortByDifficulty),
+  ];
   return { profileQuestions, fullPool: [...profileQuestions, ...extra] };
 }
 
@@ -185,14 +204,18 @@ function tryBuildStage(
  * - 앞쪽 문제: 스테이지 난이도 프로필대로 (easy → hard 정렬)
  * - 뒤쪽 문제: 같은 보스의 태그 문제로 확장 (HP가 남은 경우 이어서 풀이)
  * - 보스 매칭 실패 시 시대 아키타입 이름으로 fallback
+ *
+ * `seenIds`: 사용자가 이전에 푼 문제 ID. soft-exclude — 안 본 문제 우선 사용,
+ *            부족하면 본 문제도 허용. 중복 출제 완화.
  */
 export function pickBossAndQuestions(
   era: Era,
   stage: StageDef,
+  seenIds: Set<string> = new Set(),
 ): { name: string; questions: Question[]; fallback: boolean } {
   const shuffled = [...FIGURE_POOL[era]].sort(() => Math.random() - 0.5);
   for (const figure of shuffled) {
-    const built = tryBuildStage(era, figure, stage);
+    const built = tryBuildStage(era, figure, stage, seenIds);
     if (built) {
       return {
         name: figure,
@@ -211,14 +234,17 @@ export function pickBossAndQuestions(
     const pool = byEra[era].filter(
       (q) => q.difficulty === difficulty && !used.has(q.id),
     );
-    const shuffledPool = [...pool].sort(() => Math.random() - 0.5);
-    const taken = shuffledPool.slice(0, count);
+    const taken = takeWithFreshPriority(pool, seenIds, count);
     taken.forEach((q) => used.add(q.id));
     genericPicked.push(...taken);
   }
-  const extra = byEra[era]
-    .filter((q) => !used.has(q.id))
-    .sort(() => Math.random() - 0.5);
+  const remaining = byEra[era].filter((q) => !used.has(q.id));
+  const freshRemaining = remaining.filter((q) => !seenIds.has(q.id));
+  const seenRemaining = remaining.filter((q) => seenIds.has(q.id));
+  const extra = [
+    ...freshRemaining.sort(() => Math.random() - 0.5),
+    ...seenRemaining.sort(() => Math.random() - 0.5),
+  ];
   const full = [
     ...genericPicked.sort(
       (a, b) =>
@@ -237,25 +263,34 @@ export function pickBossAndQuestions(
 /**
  * 전투 중 문제 풀이 진행으로 거의 소진되었을 때 추가 문제를 공급.
  * 우선 보스 태그 풀 → 같은 시대 풀 → 셔플 순.
+ *
+ * `seenIds`: 사용자가 이전에 푼 문제 ID. soft-exclude.
  */
 export function getSupplementQuestions(
   era: Era,
   bossName: string,
   excludeIds: Set<string>,
   count: number,
+  seenIds: Set<string> = new Set(),
 ): Question[] {
   const isFigure = FIGURE_POOL[era].includes(bossName);
   const bossPool = isFigure
     ? getFigureQuestions(era, bossName).filter((q) => !excludeIds.has(q.id))
     : [];
-  const shuffledBossPool = [...bossPool].sort(() => Math.random() - 0.5);
-  if (shuffledBossPool.length >= count) {
-    return shuffledBossPool.slice(0, count);
+  const fromBoss = takeWithFreshPriority(bossPool, seenIds, count);
+  if (fromBoss.length >= count) {
+    return fromBoss;
   }
-  const eraExtras = byEra[era]
-    .filter((q) => !excludeIds.has(q.id) && !bossPool.includes(q))
-    .sort(() => Math.random() - 0.5);
-  return [...shuffledBossPool, ...eraExtras].slice(0, count);
+  const fromBossIds = new Set(fromBoss.map((q) => q.id));
+  const eraExtras = byEra[era].filter(
+    (q) => !excludeIds.has(q.id) && !fromBossIds.has(q.id),
+  );
+  const fromEra = takeWithFreshPriority(
+    eraExtras,
+    seenIds,
+    count - fromBoss.length,
+  );
+  return [...fromBoss, ...fromEra];
 }
 
 export const ERA_BOSS_EMOJI: Record<Era, string> = {

@@ -5,6 +5,10 @@
 //   - my-history-king-quiz-time
 //   - my-history-king-today
 // (템플릿 선택/로테이션은 백엔드 책임. 클라이언트는 hash·시간만 전달.)
+//
+// 라우팅 키 — 토스 sendMessage는 `getAnonymousKey` 익명 hash로는 라우팅 안 됨.
+// `appLogin()` OAuth로 발급한 userKey 만 인정. 첫 enable 시 클라가 인가코드를
+// 함께 보내면 서버가 토스 OAuth 교환 → tossUserKey 저장 → 이후 cron 발송 가능.
 
 const BASE = (
   (import.meta.env.VITE_REMINDER_API_BASE as string | undefined) ?? ""
@@ -15,11 +19,24 @@ export interface ReminderPayload {
   hour: number; // 0-23
   minute: number; // 0-59
   timezone: string; // e.g., "Asia/Seoul"
+  /** 첫 enable 시 `appLogin()` 결과를 함께 보냄. */
+  authorizationCode?: string;
+  referrer?: string;
 }
 
 export type ReminderResult =
   | { ok: true }
-  | { ok: false; reason: "no_endpoint" | "network" | "server"; status?: number; message?: string };
+  | {
+      ok: false;
+      reason:
+        | "no_endpoint"
+        | "network"
+        | "server"
+        | "auth_required"
+        | "auth_failed";
+      status?: number;
+      message?: string;
+    };
 
 function endpointReady(): boolean {
   return BASE.length > 0;
@@ -35,15 +52,33 @@ export async function upsertReminder(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
+    if (res.ok) return { ok: true };
+    // 서버가 구조화된 에러 반환 시 reason 매핑
+    const data = (await res.json().catch(() => null)) as
+      | { reason?: string; message?: string }
+      | null;
+    if (data?.reason === "auth_required") {
       return {
         ok: false,
-        reason: "server",
+        reason: "auth_required",
         status: res.status,
-        message: await res.text().catch(() => undefined),
+        message: data.message ?? undefined,
       };
     }
-    return { ok: true };
+    if (data?.reason === "auth_failed") {
+      return {
+        ok: false,
+        reason: "auth_failed",
+        status: res.status,
+        message: data.message ?? undefined,
+      };
+    }
+    return {
+      ok: false,
+      reason: "server",
+      status: res.status,
+      message: data?.message ?? undefined,
+    };
   } catch (err) {
     return {
       ok: false,

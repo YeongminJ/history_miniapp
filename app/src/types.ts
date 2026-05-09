@@ -34,4 +34,5 @@ export type Screen =
   | "stage"
   | "battle"
   | "result"
-  | "settings";
+  | "settings"
+  | "runner";
