@@ -29,6 +29,12 @@ interface ReminderState {
   syncMessage: string | null;
   setEnabled: (enabled: boolean) => Promise<void>;
   setTime: (hour: number, minute: number) => Promise<void>;
+  /**
+   * 시간 지정과 활성화를 한 번에 처리. 게임 종료 prompt 처럼 hour/minute 받아
+   * 즉시 등록해야 하는 흐름에서 사용. setEnabled+setTime 두 번 호출하면 sync 가
+   * 두 번 일어나서 토스 OAuth 도 두 번 트리거될 수 있음.
+   */
+  enableAt: (hour: number, minute: number) => Promise<void>;
 }
 
 /**
@@ -154,6 +160,10 @@ export const useReminderStore = create<ReminderState>()(
         setTime: async (hour, minute) => {
           set({ hour, minute });
           if (get().enabled) await sync({ hour, minute });
+        },
+        enableAt: async (hour, minute) => {
+          set({ enabled: true, hour, minute });
+          await sync({ enabled: true, hour, minute });
         },
       };
     },

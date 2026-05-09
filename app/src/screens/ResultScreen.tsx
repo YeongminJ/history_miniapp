@@ -9,13 +9,15 @@ import {
   stageTitle,
 } from "../data/stages";
 import { useAndroidBack } from "../hooks/useAndroidBack";
-import { ensureUserKey, recordPlay, registerUser } from "../lib/api";
+import { recordPlay } from "../lib/api";
 import { shareResult } from "../lib/share";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
+import { useAuthStore } from "../store/useAuthStore";
 import { useGameStore } from "../store/useGameStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { useProgressStore } from "../store/useProgressStore";
+import { useReminderStore } from "../store/useReminderStore";
 import type { Question } from "../types";
 
 export function ResultScreen() {
@@ -79,12 +81,10 @@ export function ResultScreen() {
     recorded.current = true;
 
     // 이미 등록된 사용자: 클리어 시에만 서버 스트릭 갱신.
-    // userKey는 캐시되어 있으므로 ensureUserKey가 토스 로그인을 트리거하지 않음.
+    // hash 는 익명 식별자이므로 토스 로그인 트리거 안 함.
     if (notiStatus === "registered" && cleared) {
-      void (async () => {
-        const key = await ensureUserKey();
-        if (key) await recordPlay(key);
-      })();
+      const hash = useAuthStore.getState().hash;
+      if (hash) void recordPlay(hash);
     }
 
     // 미등록/거절 상태: 로그인은 사용자가 "등록" 버튼 눌렀을 때만 시작.
@@ -97,24 +97,21 @@ export function ResultScreen() {
   }, []);
 
   const handleNotiRegister = async (reminderMinute: number) => {
-    const key = await ensureUserKey();
-    if (!key) {
-      // useEffect에서 userKey 발급된 케이스만 prompt 띄우므로 여기 도달은 드물지만 방어.
-      console.warn("[noti] userKey 발급 실패, 등록 건너뜀");
-      setShowNotiPrompt(false);
-      return;
-    }
-    const ok = await registerUser({ userKey: key, reminderMinute });
-    if (!ok) {
-      console.warn("[noti] registerUser 실패 — 다음 결과 화면에서 재시도");
+    const hour = Math.floor(reminderMinute / 60);
+    const minute = reminderMinute % 60;
+    // 학습 알림 설정 화면과 동일한 경로로 등록. OAuth(toss appLogin) 자동 처리.
+    await useReminderStore.getState().enableAt(hour, minute);
+    const status = useReminderStore.getState().syncStatus;
+    if (status !== "ok") {
+      console.warn("[noti] reminder enable failed", status);
       setShowNotiPrompt(false);
       return;
     }
     markRegistered(reminderMinute);
     trackClick("noti_register", { reminder_minute: reminderMinute, cleared });
-    // 클리어한 결과면 방금 끝낸 챕터를 스트릭 시작점으로 기록
     if (cleared) {
-      await recordPlay(key);
+      const hash = useAuthStore.getState().hash;
+      if (hash) await recordPlay(hash);
     }
     setShowNotiPrompt(false);
   };

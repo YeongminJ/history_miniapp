@@ -1,100 +1,32 @@
 /**
  * 푸시 알림 백엔드(history-king-noti-api) 클라이언트.
  * 실패해도 게임 흐름에 영향 없도록 모두 best-effort.
+ *
+ * 사용자 등록·시간 변경은 `useReminderStore` 가 담당 (`POST /reminders` + 토스 OAuth).
+ * 이 파일은 보조 호출 (스트릭 갱신 등) 만 다뤄요.
  */
-import { appLogin } from "@apps-in-toss/web-framework";
-import { useNotificationStore } from "../store/useNotificationStore";
 
 const DEFAULT_BASE = "https://history-king-noti-api.hohostd.workers.dev";
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? DEFAULT_BASE;
+const BASE_URL =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? DEFAULT_BASE;
 
 /**
- * 토스 로그인 → 우리 서버에 인가코드 교환 → 푸시 라우팅용 userKey 반환.
- *
- * 푸시(스마트 발송)는 토스 로그인 사용자에게만 발송 가능. `getAnonymousKey()`로는
- * 라우팅 안 됨.
- *
- * - 이미 로그인해 캐시된 userKey가 있으면 즉시 반환 (login 화면 안 띄움)
- * - 캐시 없으면 `appLogin()` 호출 → 토스 로그인 화면으로 이동 → 돌아오면 인가코드로
- *   서버 교환 → 받은 userKey 캐시 후 반환
- * - 실패(거절/네트워크 등) 시 null 반환
+ * 스트릭 카운터 갱신. `userHash` 는 `getAnonymousKey()` 결과 (DB users.user_key PK).
+ * 클리어 시점에 호출하면 cron 의 streak_warn 발송 판단에 쓰여요.
  */
-export async function ensureUserKey(): Promise<string | null> {
-  const cached = useNotificationStore.getState().userKey;
-  if (cached) return cached;
+export async function recordPlay(userHash: string): Promise<boolean> {
   try {
-    const { authorizationCode, referrer } = await appLogin();
-    const res = await fetch(`${BASE_URL}/api/auth/exchange`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ authorizationCode, referrer }),
-    });
-    if (!res.ok) {
-      console.warn("[api] auth/exchange failed", res.status);
-      return null;
-    }
-    const data = (await res.json()) as { userKey?: string };
-    if (!data.userKey) {
-      console.warn("[api] auth/exchange returned no userKey", data);
-      return null;
-    }
-    useNotificationStore.getState().setUserKey(data.userKey);
-    return data.userKey;
-  } catch (err) {
-    console.warn("[api] toss login flow failed", err);
-    return null;
-  }
-}
-
-interface RegisterUserInput {
-  userKey: string;
-  reminderMinute: number | null;
-  dailyEnabled?: boolean;
-  streakWarnEnabled?: boolean;
-}
-
-export async function registerUser(input: RegisterUserInput): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/users`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        dailyEnabled: true,
-        streakWarnEnabled: true,
-        ...input,
-      }),
-    });
-    return res.ok;
-  } catch (err) {
-    console.warn("[api] registerUser failed", err);
-    return false;
-  }
-}
-
-export async function recordPlay(userKey: string): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/users/${encodeURIComponent(userKey)}/play`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
+    const res = await fetch(
+      `${BASE_URL}/api/users/${encodeURIComponent(userHash)}/play`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      },
+    );
     return res.ok;
   } catch (err) {
     console.warn("[api] recordPlay failed", err);
-    return false;
-  }
-}
-
-export async function unregisterUser(userKey: string): Promise<boolean> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/users`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userKey }),
-    });
-    return res.ok;
-  } catch (err) {
-    console.warn("[api] unregisterUser failed", err);
     return false;
   }
 }
