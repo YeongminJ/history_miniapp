@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { AuthSplash } from "./components/AuthSplash";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { fetchMissionStatus } from "./lib/mission";
+import { isPromotionEnabled } from "./lib/promotion";
 import { BattleScreen } from "./screens/BattleScreen";
 import { ChapterMapScreen } from "./screens/ChapterMapScreen";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -130,9 +131,11 @@ function App() {
   }, [authHash, onboardingDone, completeOnboarding, setName]);
 
   // hash 로드 후 일일 미션 상태 동기화 (세션당 1회).
+  // 프로모션 비활성 (reward_id 미설정) 이면 호출 자체 스킵.
   useEffect(() => {
     if (!authHash) return;
     if (missionFetchedRef.current) return;
+    if (!isPromotionEnabled()) return;
     missionFetchedRef.current = true;
     void (async () => {
       const status = await fetchMissionStatus(authHash);

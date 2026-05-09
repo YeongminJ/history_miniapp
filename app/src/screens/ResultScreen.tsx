@@ -11,6 +11,7 @@ import {
 import { useAndroidBack } from "../hooks/useAndroidBack";
 import { recordPlay } from "../lib/api";
 import { claimDailyMission } from "../lib/mission";
+import { isPromotionEnabled } from "../lib/promotion";
 import { shareResult } from "../lib/share";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
@@ -295,7 +296,7 @@ export function ResultScreen() {
           </div>
         </div>
 
-        {cleared ? (
+        {cleared && isPromotionEnabled() ? (
           <MissionRewardCard
             claimedToday={claimedToday}
             pendingPoints={pendingPoints}

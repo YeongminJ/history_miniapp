@@ -1,6 +1,7 @@
 import { Button, Top } from "@toss/tds-mobile";
 import { useEffect, useState } from "react";
 import { isDevMode } from "../lib/devMode";
+import { isPromotionEnabled } from "../lib/promotion";
 import { deleteReminder } from "../lib/reminder";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
@@ -57,6 +58,7 @@ export function HomeScreen() {
   const claimedToday = useMissionStore((s) => s.claimedToday);
   const showRunner = isDevMode();
   const showDevTools = isDevMode();
+  const showMission = isPromotionEnabled();
   const [resetting, setResetting] = useState(false);
 
   const handleHomeRedeem = () => {
@@ -125,11 +127,13 @@ export function HomeScreen() {
           <Stat label="누적 점수" value={totalScore.toLocaleString()} />
         </div>
 
-        <MissionTodayCard
-          claimedToday={claimedToday}
-          pendingPoints={pendingPoints}
-          onRedeem={handleHomeRedeem}
-        />
+        {showMission ? (
+          <MissionTodayCard
+            claimedToday={claimedToday}
+            pendingPoints={pendingPoints}
+            onRedeem={handleHomeRedeem}
+          />
+        ) : null}
 
         <Button
           size="xlarge"
