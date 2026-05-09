@@ -5,6 +5,7 @@ import { deleteReminder } from "../lib/reminder";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useAuthStore } from "../store/useAuthStore";
+import { REDEEM_THRESHOLD, useMissionStore } from "../store/useMissionStore";
 import { useProgressStore } from "../store/useProgressStore";
 
 const RESET_LOCAL_KEYS = [
@@ -52,9 +53,21 @@ export function HomeScreen() {
   const totalCorrect = useProgressStore((s) => s.totalCorrect);
   const totalScore = useProgressStore((s) => s.totalScore);
   const authHash = useAuthStore((s) => s.hash);
+  const pendingPoints = useMissionStore((s) => s.pendingPoints);
+  const claimedToday = useMissionStore((s) => s.claimedToday);
   const showRunner = isDevMode();
   const showDevTools = isDevMode();
   const [resetting, setResetting] = useState(false);
+
+  const handleHomeRedeem = () => {
+    trackClick("press_redeem_points", {
+      pending: pendingPoints,
+      from: "home",
+    });
+    window.alert(
+      "토스 포인트 전환은 곧 열려요! 미션을 계속 모아두세요 💎",
+    );
+  };
 
   const accuracy =
     totalPlayed > 0 ? Math.round((totalCorrect / totalPlayed) * 100) : 0;
@@ -111,6 +124,12 @@ export function HomeScreen() {
           <Stat label="정답률" value={`${accuracy}%`} />
           <Stat label="누적 점수" value={totalScore.toLocaleString()} />
         </div>
+
+        <MissionTodayCard
+          claimedToday={claimedToday}
+          pendingPoints={pendingPoints}
+          onRedeem={handleHomeRedeem}
+        />
 
         <Button
           size="xlarge"
@@ -205,6 +224,100 @@ export function HomeScreen() {
           </button>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function MissionTodayCard({
+  claimedToday,
+  pendingPoints,
+  onRedeem,
+}: {
+  claimedToday: boolean;
+  pendingPoints: number;
+  onRedeem: () => void;
+}) {
+  const ready = pendingPoints >= REDEEM_THRESHOLD;
+  const progress = Math.min(pendingPoints, REDEEM_THRESHOLD);
+  return (
+    <div
+      style={{
+        background: ready ? "#FFF8E1" : "#FFFFFF",
+        border: ready ? "1.5px solid #FFB300" : "1.5px solid #FFE0B2",
+        borderRadius: 16,
+        padding: "14px 16px",
+        marginBottom: 14,
+        boxShadow: ready
+          ? "0 2px 16px rgba(255, 179, 0, 0.32)"
+          : "0 1px 6px rgba(0,0,0,0.04)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          marginBottom: 8,
+        }}
+      >
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#5D4037" }}>
+          🎯 오늘의 미션
+        </div>
+        <div style={{ fontSize: 12, color: "#8D6E63", fontWeight: 600 }}>
+          누적 {progress} / {REDEEM_THRESHOLD}원
+        </div>
+      </div>
+      <div
+        style={{
+          fontSize: 13,
+          color: ready ? "#E65100" : "#616161",
+          fontWeight: ready ? 700 : 400,
+          marginBottom: 10,
+        }}
+      >
+        {ready
+          ? `💎 ${pendingPoints}원 모였어요! 토스 포인트로 받을 수 있어요`
+          : claimedToday
+            ? "✓ 오늘은 완료! 내일 다시 도전해 보세요"
+            : "던전 스테이지 1개 클리어하면 +1원"}
+      </div>
+      <div
+        style={{
+          height: 6,
+          background: "#FFF3E0",
+          borderRadius: 999,
+          overflow: "hidden",
+          marginBottom: ready ? 12 : 0,
+        }}
+      >
+        <div
+          style={{
+            width: `${(progress / REDEEM_THRESHOLD) * 100}%`,
+            height: "100%",
+            background: "linear-gradient(90deg, #FFB300 0%, #FF8F00 100%)",
+            transition: "width 240ms ease",
+          }}
+        />
+      </div>
+      {ready ? (
+        <button
+          type="button"
+          onClick={onRedeem}
+          style={{
+            width: "100%",
+            padding: "12px",
+            border: "none",
+            borderRadius: 10,
+            background: "linear-gradient(135deg, #FFB300 0%, #FF8F00 100%)",
+            color: "#FFFFFF",
+            fontSize: 14,
+            fontWeight: 800,
+            cursor: "pointer",
+          }}
+        >
+          💎 토스 포인트로 받기 ({pendingPoints}원)
+        </button>
+      ) : null}
     </div>
   );
 }
