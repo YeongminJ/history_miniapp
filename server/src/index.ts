@@ -4,6 +4,7 @@ import { runTick } from "./cron/tick";
 import type { Env } from "./env";
 import auth from "./routes/auth";
 import health from "./routes/health";
+import missions from "./routes/missions";
 import reminders from "./routes/reminders";
 import users from "./routes/users";
 
@@ -23,6 +24,7 @@ app.route("/api/auth", auth);
 app.route("/api/users", users);
 app.route("/api/health", health);
 app.route("/reminders", reminders);
+app.route("/missions", missions);
 
 app.get("/", (c) => c.text("history-king-noti-api"));
 

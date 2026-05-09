@@ -2,6 +2,7 @@ import { appLogin } from "@apps-in-toss/web-framework";
 import { useEffect, useRef } from "react";
 import { AuthSplash } from "./components/AuthSplash";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { fetchMissionStatus } from "./lib/mission";
 import { BattleScreen } from "./screens/BattleScreen";
 import { ChapterMapScreen } from "./screens/ChapterMapScreen";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -12,6 +13,7 @@ import { SettingsScreen } from "./screens/SettingsScreen";
 import { StageScreen } from "./screens/StageScreen";
 import { useAppStore } from "./store/useAppStore";
 import { useAuthStore } from "./store/useAuthStore";
+import { useMissionStore } from "./store/useMissionStore";
 import { useOnboardingStore } from "./store/useOnboardingStore";
 import "./App.css";
 
@@ -96,6 +98,7 @@ function App() {
   const completeOnboarding = useOnboardingStore((s) => s.complete);
   const setName = useAuthStore((s) => s.setName);
   const mappingCheckedRef = useRef(false);
+  const missionFetchedRef = useRef(false);
 
   useEffect(() => {
     authInit();
@@ -125,6 +128,17 @@ function App() {
       cancelled = true;
     };
   }, [authHash, onboardingDone, completeOnboarding, setName]);
+
+  // hash 로드 후 일일 미션 상태 동기화 (세션당 1회).
+  useEffect(() => {
+    if (!authHash) return;
+    if (missionFetchedRef.current) return;
+    missionFetchedRef.current = true;
+    void (async () => {
+      const status = await fetchMissionStatus(authHash);
+      if (status) useMissionStore.getState().setStatus(status);
+    })();
+  }, [authHash]);
 
   // 첫 진입(저장된 hash 없음 + 인증 시도 중)일 때만 splash.
   const showSplash = !authHash && authStatus === "loading";

@@ -10,11 +10,13 @@ import {
 } from "../data/stages";
 import { useAndroidBack } from "../hooks/useAndroidBack";
 import { recordPlay } from "../lib/api";
+import { claimDailyMission } from "../lib/mission";
 import { shareResult } from "../lib/share";
 import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useGameStore } from "../store/useGameStore";
+import { REDEEM_THRESHOLD, useMissionStore } from "../store/useMissionStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { useProgressStore } from "../store/useProgressStore";
 import { useReminderStore } from "../store/useReminderStore";
@@ -41,6 +43,10 @@ export function ResultScreen() {
   const recorded = useRef(false);
   const [showAllExplanations, setShowAllExplanations] = useState(true);
   const [showNotiPrompt, setShowNotiPrompt] = useState(false);
+  const pendingPoints = useMissionStore((s) => s.pendingPoints);
+  const claimedToday = useMissionStore((s) => s.claimedToday);
+  const applyClaimResult = useMissionStore((s) => s.applyClaimResult);
+  const [claiming, setClaiming] = useState(false);
 
   const correctCount = answers.filter((a) => a.correct).length;
   const accuracy =
@@ -114,6 +120,33 @@ export function ResultScreen() {
       if (hash) await recordPlay(hash);
     }
     setShowNotiPrompt(false);
+  };
+
+  const handleClaimMission = async () => {
+    if (claiming) return;
+    const hash = useAuthStore.getState().hash;
+    if (!hash) return;
+    setClaiming(true);
+    trackClick("press_claim_mission", { era, stage_index: stageIndex });
+    try {
+      const result = await claimDailyMission(hash);
+      if (result) {
+        applyClaimResult(result);
+        trackClick("mission_claim_result", {
+          claimed: result.claimed,
+          pending: result.pendingPoints,
+        });
+      }
+    } finally {
+      setClaiming(false);
+    }
+  };
+
+  const handleRedeemPoints = () => {
+    trackClick("press_redeem_points", { pending: pendingPoints });
+    window.alert(
+      "토스 포인트 전환은 곧 열려요! 미션을 계속 모아두세요 💎",
+    );
   };
 
   const handleNotiDismiss = () => {
@@ -262,6 +295,16 @@ export function ResultScreen() {
           </div>
         </div>
 
+        {cleared ? (
+          <MissionRewardCard
+            claimedToday={claimedToday}
+            pendingPoints={pendingPoints}
+            claiming={claiming}
+            onClaim={handleClaimMission}
+            onRedeem={handleRedeemPoints}
+          />
+        ) : null}
+
         {wrongAnswers.length > 0 ? (
           <div style={{ marginBottom: 16 }}>
             <div
@@ -403,6 +446,124 @@ export function ResultScreen() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MissionRewardCard({
+  claimedToday,
+  pendingPoints,
+  claiming,
+  onClaim,
+  onRedeem,
+}: {
+  claimedToday: boolean;
+  pendingPoints: number;
+  claiming: boolean;
+  onClaim: () => void;
+  onRedeem: () => void;
+}) {
+  const ready = pendingPoints >= REDEEM_THRESHOLD;
+  const progress = Math.min(pendingPoints, REDEEM_THRESHOLD);
+  return (
+    <div
+      style={{
+        background: "#FFFFFF",
+        border: "1.5px solid #FFD54F",
+        borderRadius: 16,
+        padding: "16px 18px",
+        marginBottom: 16,
+        boxShadow: "0 2px 12px rgba(255, 213, 79, 0.25)",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "baseline",
+          marginBottom: 10,
+        }}
+      >
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#5D4037" }}>
+          🎯 오늘의 미션 · 던전 클리어
+        </div>
+        <div style={{ fontSize: 12, color: "#8D6E63", fontWeight: 600 }}>
+          누적 {progress} / {REDEEM_THRESHOLD}원
+        </div>
+      </div>
+      <div
+        style={{
+          height: 6,
+          background: "#FFF3E0",
+          borderRadius: 999,
+          overflow: "hidden",
+          marginBottom: 12,
+        }}
+      >
+        <div
+          style={{
+            width: `${(progress / REDEEM_THRESHOLD) * 100}%`,
+            height: "100%",
+            background: "linear-gradient(90deg, #FFB300 0%, #FF8F00 100%)",
+            transition: "width 240ms ease",
+          }}
+        />
+      </div>
+      {claimedToday ? (
+        <div
+          style={{
+            padding: "12px",
+            background: "#F5F5F5",
+            color: "#9E9E9E",
+            borderRadius: 10,
+            textAlign: "center",
+            fontSize: 13,
+            fontWeight: 600,
+          }}
+        >
+          ✓ 오늘은 이미 받았어요. 내일 다시 도전!
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={claiming}
+          onClick={onClaim}
+          style={{
+            width: "100%",
+            padding: "14px",
+            border: "none",
+            borderRadius: 10,
+            background: "linear-gradient(135deg, #FFB300 0%, #FF8F00 100%)",
+            color: "#FFFFFF",
+            fontSize: 15,
+            fontWeight: 800,
+            cursor: claiming ? "wait" : "pointer",
+            opacity: claiming ? 0.7 : 1,
+          }}
+        >
+          {claiming ? "받는 중..." : "🎁 미션 보상 받기 (+1원)"}
+        </button>
+      )}
+      {ready ? (
+        <button
+          type="button"
+          onClick={onRedeem}
+          style={{
+            marginTop: 8,
+            width: "100%",
+            padding: "12px",
+            border: "1.5px solid #5D4037",
+            borderRadius: 10,
+            background: "#FFFFFF",
+            color: "#5D4037",
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: "pointer",
+          }}
+        >
+          💎 토스 포인트로 받기 ({pendingPoints}원)
+        </button>
+      ) : null}
     </div>
   );
 }

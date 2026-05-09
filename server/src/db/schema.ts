@@ -41,6 +41,11 @@ export const users = sqliteTable("users", {
   /** 현재 연속 플레이 일수. */
   currentStreak: integer("current_streak").notNull().default(0),
   timezone: text("timezone").notNull().default("Asia/Seoul"),
+  /**
+   * 일일 미션 누적 포인트. 클리어 시 +1, 토스 포인트로 redeem 시 -10.
+   * 콘솔 프로모션 reward 발급 전까지는 단순 카운터.
+   */
+  pendingPoints: integer("pending_points").notNull().default(0),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
@@ -67,5 +72,23 @@ export const notifications = sqliteTable(
       t.date,
       t.type,
     ),
+  }),
+);
+
+/**
+ * 일일 미션 클레임 이력. (user_key, date) 1회 보장.
+ * 같은 KST 날짜에 두 번 받기 시도해도 두 번째는 conflict 로 차단.
+ */
+export const missionClaims = sqliteTable(
+  "mission_claims",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userKey: text("user_key").notNull(),
+    /** KST 'YYYY-MM-DD' */
+    date: text("date").notNull(),
+    claimedAt: integer("claimed_at").notNull(),
+  },
+  (t) => ({
+    uniq: uniqueIndex("mission_claims_user_date").on(t.userKey, t.date),
   }),
 );
