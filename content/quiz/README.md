@@ -1,19 +1,23 @@
 # 한국사 퀴즈 콘텐츠
 
-AI 생성 + 이중 독립 검수를 거친 한국사 퀴즈 **1,000문제** 데이터셋. Apps-in-Toss 미니앱(역사 퀴즈 게임)용.
+AI 생성 한국사 퀴즈 **2,040문제** 데이터셋. Apps-in-Toss 미니앱(역사왕)용.
+- 1·2 파일군 (1,000문제): 이중 독립 검수 완료 + 우선 수정 적용
+- 3 파일군 (1,000문제): AI 생성 + 검수 1회 + 우선 수정 적용 (critical 2 / major 5 보정)
+- 4 파일군 (40문제): 현대 easy 보강용. 미검수
+- 알려진 잔여 이슈: 현대3 후반부(C275~C350) 9쌍 주제 중복 — 게임 동작엔 무영향, 출시 후 정리 권고
 
 ## 구조
 
-| 시대 | 파일 1 | 파일 2 | 합계 | ID 범위 |
-|------|--------|--------|-----|---------|
-| 고대 (선사~남북국) | [ancient.json](./ancient.json) 100 | [ancient2.json](./ancient2.json) 100 | 200 | A001~A200 |
-| 고려 (918~1392) | [goryeo.json](./goryeo.json) 100 | [goryeo2.json](./goryeo2.json) 100 | 200 | G001~G200 |
-| 조선 (1392~1863) | [joseon.json](./joseon.json) 150 | [joseon2.json](./joseon2.json) 150 | 300 | J001~J300 |
-| 근대 (1876~1945) | [modern.json](./modern.json) 100 | [modern2.json](./modern2.json) 100 | 200 | M001~M200 |
-| 현대 (1945~) | [contemporary.json](./contemporary.json) 50 | [contemporary2.json](./contemporary2.json) 50 | 100 | C001~C100 |
-| **합계** | **500** | **500** | **1,000** | — |
+| 시대 | 파일 1 | 파일 2 | 파일 3 | 파일 4 | 합계 | ID 범위 |
+|------|--------|--------|--------|--------|-----|---------|
+| 고대 (선사~남북국) | [ancient.json](./ancient.json) 100 | [ancient2.json](./ancient2.json) 100 | [ancient3.json](./ancient3.json) 150 | — | 350 | A001~A350 |
+| 고려 (918~1392) | [goryeo.json](./goryeo.json) 100 | [goryeo2.json](./goryeo2.json) 100 | [goryeo3.json](./goryeo3.json) 150 | — | 350 | G001~G350 |
+| 조선 (1392~1863) | [joseon.json](./joseon.json) 150 | [joseon2.json](./joseon2.json) 150 | [joseon3.json](./joseon3.json) 250 | — | 550 | J001~J550 |
+| 근대 (1876~1945) | [modern.json](./modern.json) 100 | [modern2.json](./modern2.json) 100 | [modern3.json](./modern3.json) 200 | — | 400 | M001~M400 |
+| 현대 (1945~) | [contemporary.json](./contemporary.json) 50 | [contemporary2.json](./contemporary2.json) 50 | [contemporary3.json](./contemporary3.json) 250 | [contemporary4.json](./contemporary4.json) 40 | 390 | C001~C390 |
+| **합계** | **500** | **500** | **1,000** | **40** | **2,040** | — |
 
-난이도 분포: **easy 300 / medium 500 / hard 200**
+난이도 분포: **easy 614 / medium 991 / hard 435**
 
 부가 파일:
 - [index.json](./index.json) — 전체 메타데이터
