@@ -1,0 +1,30 @@
+name = "history-king-noti-api"
+main = "src/index.ts"
+compatibility_date = "2026-04-29"
+compatibility_flags = ["nodejs_compat"]
+
+# 토스 API 모드 ("mock" | "real").
+[vars]
+TOSS_MODE = "real"
+# 토스 콘솔에서 승인받은 기능성 템플릿 코드.
+TOSS_TEMPLATE_DAILY = "my-history-king-quiz-time"
+TOSS_TEMPLATE_STREAK_WARN = "my-history-king-today"
+
+# D1 (SQLite) 바인딩.
+# 처음 셋업 시 `wrangler d1 create history-king-noti-db`로 만든 뒤 출력된
+# database_id를 아래 빈 칸에 채워주세요.
+[[d1_databases]]
+binding = "DB"
+database_name = "history-king-noti-db"
+database_id = "27eeefb5-6065-4c8d-82f9-fcbb3d1f3868"
+migrations_dir = "drizzle/migrations"
+
+# Cron Trigger — 매 분 (UTC 기준이지만 KST 변환은 코드에서 처리).
+[triggers]
+crons = ["* * * * *"]
+
+# 토스 mTLS 인증서 바인딩.
+# 업로드: wrangler mtls-certificate upload --cert <crt> --key <key> --name history-king-toss
+[[mtls_certificates]]
+binding = "TOSS_CERT"
+certificate_id = "f6c1dd92-9f74-43a0-8291-a86fe9bfb2d0"
