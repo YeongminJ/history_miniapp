@@ -14,7 +14,10 @@ interface AuthState {
   hash: string | null;
   status: AuthStatus;
   lastCheckedAt: number | null;
+  /** 토스 user_name 동의 시 서버 OAuth 교환으로 받은 사용자 이름. */
+  name: string | null;
   init: () => Promise<void>;
+  setName: (name: string | null) => void;
 }
 
 let inFlight: Promise<void> | null = null;
@@ -25,6 +28,8 @@ export const useAuthStore = create<AuthState>()(
       hash: null,
       status: "idle",
       lastCheckedAt: null,
+      name: null,
+      setName: (name) => set({ name }),
       init: () => {
         if (inFlight) return inFlight;
         inFlight = (async () => {
@@ -50,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "history-king-auth-v1",
-      partialize: (s) => ({ hash: s.hash, status: s.status }),
+      partialize: (s) => ({ hash: s.hash, status: s.status, name: s.name }),
     },
   ),
 );

@@ -21,12 +21,12 @@ route.post("/migration/status", zValidator("json", statusSchema), async (c) => {
   const { hash } = c.req.valid("json");
   const db = getDb(c.env.DB);
   const user = await db
-    .select({ tossUserKey: users.tossUserKey })
+    .select({ tossUserKey: users.tossUserKey, name: users.name })
     .from(users)
     .where(eq(users.userKey, hash))
     .get();
   const isMapped = !!user?.tossUserKey;
-  return c.json({ isMapped });
+  return c.json({ isMapped, name: user?.name ?? null });
 });
 
 /**
@@ -52,7 +52,11 @@ route.post("/migration/link", zValidator("json", linkSchema), async (c) => {
     .where(eq(users.userKey, hash))
     .get();
   if (existing?.tossUserKey) {
-    return c.json({ success: true, alreadyMapped: true });
+    return c.json({
+      success: true,
+      alreadyMapped: true,
+      name: existing.name ?? null,
+    });
   }
 
   const exchange = await exchangeAuthorizationCode(
@@ -73,6 +77,7 @@ route.post("/migration/link", zValidator("json", linkSchema), async (c) => {
     .values({
       userKey: hash,
       tossUserKey: exchange.tossUserKey,
+      name: exchange.name,
       createdAt: now,
       updatedAt: now,
     })
@@ -80,11 +85,12 @@ route.post("/migration/link", zValidator("json", linkSchema), async (c) => {
       target: users.userKey,
       set: {
         tossUserKey: exchange.tossUserKey,
+        ...(exchange.name ? { name: exchange.name } : {}),
         updatedAt: now,
       },
     });
 
-  return c.json({ success: true });
+  return c.json({ success: true, name: exchange.name });
 });
 
 /**

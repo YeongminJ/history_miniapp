@@ -1,4 +1,5 @@
 import type { Env } from "../env";
+import { decryptTossUserField } from "./toss-decrypt";
 
 const TOSS_GENERATE_TOKEN_URL =
   "https://apps-in-toss-api.toss.im/api-partner/v1/apps-in-toss/user/oauth2/generate-token";
@@ -25,12 +26,14 @@ interface TossLoginMeResponse {
     userKey?: string | number;
     scope?: string;
     agreedTerms?: unknown[];
+    /** AES-256-GCM 암호화. base64( IV(12) || ciphertext || tag(16) ). user_name scope 동의 시 포함. */
+    name?: string | null;
   };
   error?: { errorCode?: string; reason?: string };
 }
 
 export type TossOAuthResult =
-  | { ok: true; tossUserKey: string }
+  | { ok: true; tossUserKey: string; name: string | null }
   | { ok: false; error: string };
 
 /**
@@ -122,5 +125,12 @@ export async function exchangeAuthorizationCode(
       error: `login-me failed (${meData?.error?.errorCode ?? meData?.resultType ?? "unknown"})`,
     };
   }
-  return { ok: true, tossUserKey: String(meData.success.userKey) };
+
+  // user_name scope 동의 시 암호화된 name 동봉. 복호화 실패해도 핵심 흐름은 진행.
+  const name = await decryptTossUserField(env, meData.success.name ?? null);
+  return {
+    ok: true,
+    tossUserKey: String(meData.success.userKey),
+    name,
+  };
 }

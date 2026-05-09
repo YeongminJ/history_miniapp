@@ -48,6 +48,7 @@ route.post("/", zValidator("json", upsertSchema), async (c) => {
     .get();
 
   let tossUserKey: string | null = existing?.tossUserKey ?? null;
+  let name: string | null = existing?.name ?? null;
 
   // 라우팅 키 없으면 OAuth 교환 시도
   if (!tossUserKey) {
@@ -75,6 +76,7 @@ route.post("/", zValidator("json", upsertSchema), async (c) => {
       );
     }
     tossUserKey = exchange.tossUserKey;
+    if (exchange.name) name = exchange.name;
   }
 
   await db
@@ -82,6 +84,7 @@ route.post("/", zValidator("json", upsertSchema), async (c) => {
     .values({
       userKey: body.userHash,
       tossUserKey,
+      name,
       reminderMinute,
       dailyEnabled: true,
       streakWarnEnabled: true,
@@ -93,6 +96,8 @@ route.post("/", zValidator("json", upsertSchema), async (c) => {
       target: users.userKey,
       set: {
         tossUserKey,
+        // name 은 한 번 설정되면 OAuth 결과로만 갱신 (덮어쓰기 방지). exchange 가 새 name 주면 갱신.
+        ...(name ? { name } : {}),
         reminderMinute,
         dailyEnabled: true,
         streakWarnEnabled: true,

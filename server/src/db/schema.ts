@@ -21,6 +21,11 @@ export const users = sqliteTable("users", {
    * 첫 enable 시 appLogin → OAuth 교환으로 채움. null이면 cron 발송 대상에서 제외.
    */
   tossUserKey: text("toss_user_key"),
+  /**
+   * 토스 user_name scope 로 받은 사용자 이름. 공유 메시지 인사말 등 UX 에 사용.
+   * 사용자가 동의하지 않거나 복호화 실패 시 null.
+   */
+  name: text("name"),
   /** 알림 받을 KST 분(0~1439). null이면 비활성. */
   reminderMinute: integer("reminder_minute"),
   /** 데일리 리마인드 활성 여부. */

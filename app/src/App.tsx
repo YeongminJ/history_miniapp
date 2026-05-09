@@ -19,8 +19,14 @@ const REMINDER_API_BASE = (
   (import.meta.env.VITE_REMINDER_API_BASE as string | undefined) ?? ""
 ).replace(/\/$/, "");
 
-async function checkServerMapping(hash: string): Promise<boolean> {
-  if (!REMINDER_API_BASE) return false;
+interface MappingStatus {
+  isMapped: boolean;
+  name: string | null;
+}
+
+async function checkServerMapping(hash: string): Promise<MappingStatus> {
+  const empty: MappingStatus = { isMapped: false, name: null };
+  if (!REMINDER_API_BASE) return empty;
   try {
     const res = await fetch(
       `${REMINDER_API_BASE}/api/auth/migration/status`,
@@ -30,34 +36,38 @@ async function checkServerMapping(hash: string): Promise<boolean> {
         body: JSON.stringify({ hash }),
       },
     );
-    if (!res.ok) return false;
+    if (!res.ok) return empty;
     const data = (await res.json().catch(() => null)) as
-      | { isMapped?: boolean }
+      | { isMapped?: boolean; name?: string | null }
       | null;
-    return !!data?.isMapped;
+    return {
+      isMapped: !!data?.isMapped,
+      name: data?.name ?? null,
+    };
   } catch (err) {
     console.warn("[mapping-check] failed", err);
-    return false;
+    return empty;
   }
 }
 
 /**
  * Stale toss_user_key 회복 — cron 이 4010 받고 서버에서 toss_user_key 를 NULL 로 비웠을 때,
  * 클라에서 1회 silent appLogin 해서 재매핑. 이미 동의한 사용자는 토스 UI 안 뜨고 즉시 코드 발급.
+ * 매핑 성공 시 새로 받은 name 반환 (없으면 null).
  */
-async function recoverMapping(hash: string): Promise<void> {
-  if (!REMINDER_API_BASE) return;
-  if (typeof appLogin !== "function") return;
+async function recoverMapping(hash: string): Promise<string | null> {
+  if (!REMINDER_API_BASE) return null;
+  if (typeof appLogin !== "function") return null;
   let result: { authorizationCode?: string; referrer?: string } | null;
   try {
     result = await appLogin();
   } catch (err) {
     console.warn("[recovery] appLogin failed", err);
-    return;
+    return null;
   }
-  if (!result?.authorizationCode || !result?.referrer) return;
+  if (!result?.authorizationCode || !result?.referrer) return null;
   try {
-    await fetch(`${REMINDER_API_BASE}/api/auth/migration/link`, {
+    const res = await fetch(`${REMINDER_API_BASE}/api/auth/migration/link`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -66,8 +76,14 @@ async function recoverMapping(hash: string): Promise<void> {
         referrer: result.referrer,
       }),
     });
+    if (!res.ok) return null;
+    const data = (await res.json().catch(() => null)) as
+      | { name?: string | null }
+      | null;
+    return data?.name ?? null;
   } catch (err) {
     console.warn("[recovery] link failed", err);
+    return null;
   }
 }
 
@@ -78,6 +94,7 @@ function App() {
   const authInit = useAuthStore((s) => s.init);
   const onboardingDone = useOnboardingStore((s) => s.completed);
   const completeOnboarding = useOnboardingStore((s) => s.complete);
+  const setName = useAuthStore((s) => s.setName);
   const mappingCheckedRef = useRef(false);
 
   useEffect(() => {
@@ -93,18 +110,21 @@ function App() {
     mappingCheckedRef.current = true;
     let cancelled = false;
     void (async () => {
-      const isMapped = await checkServerMapping(authHash);
+      const status = await checkServerMapping(authHash);
       if (cancelled) return;
-      if (!onboardingDone && isMapped) {
+      if (status.name) setName(status.name);
+      if (!onboardingDone && status.isMapped) {
         completeOnboarding();
-      } else if (onboardingDone && !isMapped) {
-        await recoverMapping(authHash);
+      } else if (onboardingDone && !status.isMapped) {
+        const recoveredName = await recoverMapping(authHash);
+        if (cancelled) return;
+        if (recoveredName) setName(recoveredName);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [authHash, onboardingDone, completeOnboarding]);
+  }, [authHash, onboardingDone, completeOnboarding, setName]);
 
   // 첫 진입(저장된 hash 없음 + 인증 시도 중)일 때만 splash.
   const showSplash = !authHash && authStatus === "loading";
