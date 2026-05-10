@@ -7,6 +7,7 @@ import goryeo3 from "../../../content/quiz/goryeo3.json";
 import joseon from "../../../content/quiz/joseon.json";
 import joseon2 from "../../../content/quiz/joseon2.json";
 import joseon3 from "../../../content/quiz/joseon3.json";
+import joseon4 from "../../../content/quiz/joseon4.json";
 import modern from "../../../content/quiz/modern.json";
 import modern2 from "../../../content/quiz/modern2.json";
 import modern3 from "../../../content/quiz/modern3.json";
@@ -29,6 +30,7 @@ const rawFiles = [
   joseon,
   joseon2,
   joseon3,
+  joseon4,
   modern,
   modern2,
   modern3,

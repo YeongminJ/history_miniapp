@@ -1,12 +1,12 @@
 {
-  "version": "3.1.0",
+  "version": "3.2.0",
   "language": "ko",
   "topic": "한국사",
-  "totalQuestions": 2040,
+  "totalQuestions": 2070,
   "difficultyDistribution": {
-    "easy": 614,
-    "medium": 991,
-    "hard": 435
+    "easy": 623,
+    "medium": 1006,
+    "hard": 441
   },
   "eras": [
     {
@@ -31,10 +31,10 @@
       "era": "조선",
       "prefix": "J",
       "range": "1392 ~ 1863 (흥선대원군 집권 이전)",
-      "totalQuestions": 550,
-      "files": ["joseon.json", "joseon2.json", "joseon3.json"],
-      "idRanges": ["J001-J150", "J151-J300", "J301-J550"],
-      "difficultyCount": { "easy": 165, "medium": 275, "hard": 110 }
+      "totalQuestions": 580,
+      "files": ["joseon.json", "joseon2.json", "joseon3.json", "joseon4.json"],
+      "idRanges": ["J001-J150", "J151-J300", "J301-J550", "J551-J580"],
+      "difficultyCount": { "easy": 174, "medium": 290, "hard": 116 }
     },
     {
       "era": "근대",
