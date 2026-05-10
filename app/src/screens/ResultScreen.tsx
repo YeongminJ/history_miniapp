@@ -9,6 +9,7 @@ import {
   stageTitle,
 } from "../data/stages";
 import { useAndroidBack } from "../hooks/useAndroidBack";
+import { useRedeemPoints } from "../hooks/useRedeemPoints";
 import { recordPlay } from "../lib/api";
 import { claimDailyMission } from "../lib/mission";
 import { isPromotionEnabled } from "../lib/promotion";
@@ -48,6 +49,7 @@ export function ResultScreen() {
   const claimedToday = useMissionStore((s) => s.claimedToday);
   const applyClaimResult = useMissionStore((s) => s.applyClaimResult);
   const [claiming, setClaiming] = useState(false);
+  const { redeeming, redeem: handleRedeemPoints } = useRedeemPoints("result");
 
   const correctCount = answers.filter((a) => a.correct).length;
   const accuracy =
@@ -141,13 +143,6 @@ export function ResultScreen() {
     } finally {
       setClaiming(false);
     }
-  };
-
-  const handleRedeemPoints = () => {
-    trackClick("press_redeem_points", { pending: pendingPoints });
-    window.alert(
-      "토스 포인트 전환은 곧 열려요! 미션을 계속 모아두세요 💎",
-    );
   };
 
   const handleNotiDismiss = () => {
@@ -301,6 +296,7 @@ export function ResultScreen() {
             claimedToday={claimedToday}
             pendingPoints={pendingPoints}
             claiming={claiming}
+            redeeming={redeeming}
             onClaim={handleClaimMission}
             onRedeem={handleRedeemPoints}
           />
@@ -455,12 +451,14 @@ function MissionRewardCard({
   claimedToday,
   pendingPoints,
   claiming,
+  redeeming,
   onClaim,
   onRedeem,
 }: {
   claimedToday: boolean;
   pendingPoints: number;
   claiming: boolean;
+  redeeming: boolean;
   onClaim: () => void;
   onRedeem: () => void;
 }) {
@@ -549,6 +547,7 @@ function MissionRewardCard({
         <button
           type="button"
           onClick={onRedeem}
+          disabled={redeeming}
           style={{
             marginTop: 8,
             width: "100%",
@@ -559,10 +558,13 @@ function MissionRewardCard({
             color: "#5D4037",
             fontSize: 14,
             fontWeight: 700,
-            cursor: "pointer",
+            cursor: redeeming ? "wait" : "pointer",
+            opacity: redeeming ? 0.7 : 1,
           }}
         >
-          💎 토스 포인트로 받기 ({pendingPoints}원)
+          {redeeming
+            ? "받는 중..."
+            : `💎 토스 포인트로 받기 (${pendingPoints}원)`}
         </button>
       ) : null}
     </div>

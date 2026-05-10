@@ -91,4 +91,73 @@ route.post("/claim-daily", zValidator("json", hashSchema), async (c) => {
   });
 });
 
+const redeemSchema = z.object({
+  hash: z.string().min(1).max(200),
+  amount: z.number().int().positive(),
+  /** 토스가 grantPromotionReward 응답으로 돌려준 reward key. 로깅용. */
+  grantKey: z.string().min(1).max(200),
+});
+
+/**
+ * 토스 포인트 발행 성공 후 누적 포인트 차감.
+ * 클라가 SDK 호출 → success → 이 엔드포인트 호출.
+ * pendingPoints 가 amount 보다 적으면 차감 없이 거부.
+ */
+route.post("/redeem", zValidator("json", redeemSchema), async (c) => {
+  const { hash, amount, grantKey } = c.req.valid("json");
+  const db = getDb(c.env.DB);
+  const today = nowKstDate(new Date());
+  const now = Date.now();
+
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.userKey, hash))
+    .get();
+  if (!user) return c.json({ ok: false, reason: "user_not_found" }, 404);
+  if (user.pendingPoints < amount) {
+    return c.json(
+      {
+        ok: false,
+        reason: "insufficient_points",
+        pendingPoints: user.pendingPoints,
+        today,
+      },
+      400,
+    );
+  }
+
+  await db
+    .update(users)
+    .set({
+      pendingPoints: sql`${users.pendingPoints} - ${amount}`,
+      updatedAt: now,
+    })
+    .where(eq(users.userKey, hash));
+
+  console.log(
+    "[mission/redeem]",
+    JSON.stringify({ hash, amount, grantKey }),
+  );
+
+  const claim = await db
+    .select()
+    .from(missionClaims)
+    .where(
+      and(eq(missionClaims.userKey, hash), eq(missionClaims.date, today)),
+    )
+    .get();
+  const after = await db
+    .select({ pendingPoints: users.pendingPoints })
+    .from(users)
+    .where(eq(users.userKey, hash))
+    .get();
+
+  return c.json({
+    pendingPoints: after?.pendingPoints ?? 0,
+    claimedToday: !!claim,
+    today,
+  });
+});
+
 export default route;

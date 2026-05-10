@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export const REDEEM_THRESHOLD = 10;
+// TEST: 토스 프로모션 검증 단계에서는 1원만 모여도 redeem 활성. 운영 전에 10 으로 복구.
+export const REDEEM_THRESHOLD = 1;
 
 interface MissionState {
   /** 토스 포인트로 redeem 대기 중인 누적 (1원 단위). */

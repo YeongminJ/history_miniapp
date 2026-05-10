@@ -1,5 +1,6 @@
 import { Button, Top } from "@toss/tds-mobile";
 import { useEffect, useState } from "react";
+import { useRedeemPoints } from "../hooks/useRedeemPoints";
 import { isDevMode } from "../lib/devMode";
 import { isPromotionEnabled } from "../lib/promotion";
 import { deleteReminder } from "../lib/reminder";
@@ -60,16 +61,7 @@ export function HomeScreen() {
   const showDevTools = isDevMode();
   const showMission = isPromotionEnabled();
   const [resetting, setResetting] = useState(false);
-
-  const handleHomeRedeem = () => {
-    trackClick("press_redeem_points", {
-      pending: pendingPoints,
-      from: "home",
-    });
-    window.alert(
-      "토스 포인트 전환은 곧 열려요! 미션을 계속 모아두세요 💎",
-    );
-  };
+  const { redeeming, redeem: handleHomeRedeem } = useRedeemPoints("home");
 
   const accuracy =
     totalPlayed > 0 ? Math.round((totalCorrect / totalPlayed) * 100) : 0;
@@ -131,6 +123,7 @@ export function HomeScreen() {
           <MissionTodayCard
             claimedToday={claimedToday}
             pendingPoints={pendingPoints}
+            redeeming={redeeming}
             onRedeem={handleHomeRedeem}
           />
         ) : null}
@@ -235,10 +228,12 @@ export function HomeScreen() {
 function MissionTodayCard({
   claimedToday,
   pendingPoints,
+  redeeming,
   onRedeem,
 }: {
   claimedToday: boolean;
   pendingPoints: number;
+  redeeming: boolean;
   onRedeem: () => void;
 }) {
   const ready = pendingPoints >= REDEEM_THRESHOLD;
@@ -307,6 +302,7 @@ function MissionTodayCard({
         <button
           type="button"
           onClick={onRedeem}
+          disabled={redeeming}
           style={{
             width: "100%",
             padding: "12px",
@@ -316,10 +312,13 @@ function MissionTodayCard({
             color: "#FFFFFF",
             fontSize: 14,
             fontWeight: 800,
-            cursor: "pointer",
+            cursor: redeeming ? "wait" : "pointer",
+            opacity: redeeming ? 0.7 : 1,
           }}
         >
-          💎 토스 포인트로 받기 ({pendingPoints}원)
+          {redeeming
+            ? "받는 중..."
+            : `💎 토스 포인트로 받기 (${pendingPoints}원)`}
         </button>
       ) : null}
     </div>

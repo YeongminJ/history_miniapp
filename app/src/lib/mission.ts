@@ -56,3 +56,27 @@ export async function claimDailyMission(
     return null;
   }
 }
+
+/**
+ * 토스 포인트 발행 성공 후 서버 누적 포인트 차감.
+ * `grantKey` 는 토스가 돌려준 reward key — 서버 로깅용.
+ */
+export async function redeemMissionPoints(
+  hash: string,
+  amount: number,
+  grantKey: string,
+): Promise<MissionStatus | null> {
+  if (!BASE) return null;
+  try {
+    const res = await fetch(`${BASE}/missions/redeem`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hash, amount, grantKey }),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as MissionStatus;
+  } catch (err) {
+    console.warn("[mission] redeem failed", err);
+    return null;
+  }
+}
