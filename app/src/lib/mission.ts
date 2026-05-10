@@ -17,6 +17,8 @@ export interface ClaimResult {
   ok: boolean;
   /** false 면 오늘 이미 받음. */
   claimed: boolean;
+  /** 가중 랜덤으로 결정된 보상 액수 (claimed=true 일 때만 의미 있음). */
+  awardedAmount: number;
   pendingPoints: number;
   today: string;
 }

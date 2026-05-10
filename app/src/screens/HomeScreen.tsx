@@ -275,10 +275,10 @@ function MissionTodayCard({
         }}
       >
         {ready
-          ? `💎 ${pendingPoints}원 모였어요! 토스 포인트로 받을 수 있어요`
+          ? `💎 ${pendingPoints}원 모였어요! 광고 보고 토스 포인트로 받을 수 있어요`
           : claimedToday
             ? "✓ 오늘은 완료! 내일 다시 도전해 보세요"
-            : "던전 스테이지 1개 클리어하면 +1원"}
+            : "던전 스테이지 1개 클리어하면 보상 적립"}
       </div>
       <div
         style={{
@@ -317,8 +317,8 @@ function MissionTodayCard({
           }}
         >
           {redeeming
-            ? "받는 중..."
-            : `💎 토스 포인트로 받기 (${pendingPoints}원)`}
+            ? "광고 준비 중..."
+            : `📺 광고 보고 토스 포인트로 받기 (${pendingPoints}원)`}
         </button>
       ) : null}
     </div>

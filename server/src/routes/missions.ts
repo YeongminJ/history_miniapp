@@ -16,6 +16,20 @@ import { nowKstDate } from "../lib/time";
  *    (실제 토스 API 호출은 콘솔 reward 등록 후 별도 단계)
  */
 
+/**
+ * 일일 미션 보상 가중 랜덤 추첨.
+ *  1원 40% / 2원 30% / 3원 15% / 4원 10% / 5원 5%
+ * 클라가 조작하지 못하도록 서버에서만 결정.
+ */
+function drawDailyReward(): number {
+  const r = Math.random();
+  if (r < 0.4) return 1;
+  if (r < 0.7) return 2;
+  if (r < 0.85) return 3;
+  if (r < 0.95) return 4;
+  return 5;
+}
+
 const route = new Hono<{ Bindings: Env }>();
 
 const hashSchema = z.object({
@@ -67,14 +81,20 @@ route.post("/claim-daily", zValidator("json", hashSchema), async (c) => {
     .returning();
   const claimed = inserted.length > 0;
 
+  let awardedAmount = 0;
   if (claimed) {
+    awardedAmount = drawDailyReward();
     await db
       .update(users)
       .set({
-        pendingPoints: sql`${users.pendingPoints} + 1`,
+        pendingPoints: sql`${users.pendingPoints} + ${awardedAmount}`,
         updatedAt: now,
       })
       .where(eq(users.userKey, hash));
+    console.log(
+      "[mission/claim-daily]",
+      JSON.stringify({ hash, awardedAmount, today }),
+    );
   }
 
   const after = await db
@@ -86,6 +106,7 @@ route.post("/claim-daily", zValidator("json", hashSchema), async (c) => {
   return c.json({
     ok: true,
     claimed,
+    awardedAmount,
     pendingPoints: after?.pendingPoints ?? 0,
     today,
   });

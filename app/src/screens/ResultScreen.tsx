@@ -137,8 +137,14 @@ export function ResultScreen() {
         applyClaimResult(result);
         trackClick("mission_claim_result", {
           claimed: result.claimed,
+          awarded: result.awardedAmount,
           pending: result.pendingPoints,
         });
+        if (result.claimed && result.awardedAmount > 0) {
+          window.alert(
+            `🎉 오늘의 미션 보상으로 ${result.awardedAmount}원을 받았어요!`,
+          );
+        }
       }
     } finally {
       setClaiming(false);
@@ -540,7 +546,7 @@ function MissionRewardCard({
             opacity: claiming ? 0.7 : 1,
           }}
         >
-          {claiming ? "받는 중..." : "🎁 미션 보상 받기 (+1원)"}
+          {claiming ? "받는 중..." : "🎁 미션 보상 받기"}
         </button>
       )}
       {ready ? (
@@ -563,8 +569,8 @@ function MissionRewardCard({
           }}
         >
           {redeeming
-            ? "받는 중..."
-            : `💎 토스 포인트로 받기 (${pendingPoints}원)`}
+            ? "광고 준비 중..."
+            : `📺 광고 보고 토스 포인트로 받기 (${pendingPoints}원)`}
         </button>
       ) : null}
     </div>
