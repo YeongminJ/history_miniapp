@@ -1,58 +1,58 @@
 {
-  "version": "3.2.0",
+  "version": "3.3.0",
   "language": "ko",
   "topic": "한국사",
-  "totalQuestions": 2070,
+  "totalQuestions": 2570,
   "difficultyDistribution": {
-    "easy": 623,
-    "medium": 1006,
-    "hard": 441
+    "easy": 773,
+    "medium": 1256,
+    "hard": 541
   },
   "eras": [
     {
       "era": "고대",
       "prefix": "A",
       "range": "선사시대 ~ 남북국시대",
-      "totalQuestions": 350,
-      "files": ["ancient.json", "ancient2.json", "ancient3.json"],
-      "idRanges": ["A001-A100", "A101-A200", "A201-A350"],
-      "difficultyCount": { "easy": 105, "medium": 175, "hard": 70 }
+      "totalQuestions": 450,
+      "files": ["ancient.json", "ancient2.json", "ancient3.json", "ancient4.json"],
+      "idRanges": ["A001-A100", "A101-A200", "A201-A350", "A351-A450"],
+      "difficultyCount": { "easy": 135, "medium": 225, "hard": 90 }
     },
     {
       "era": "고려",
       "prefix": "G",
       "range": "918 ~ 1392",
-      "totalQuestions": 350,
-      "files": ["goryeo.json", "goryeo2.json", "goryeo3.json"],
-      "idRanges": ["G001-G100", "G101-G200", "G201-G350"],
-      "difficultyCount": { "easy": 105, "medium": 175, "hard": 70 }
+      "totalQuestions": 450,
+      "files": ["goryeo.json", "goryeo2.json", "goryeo3.json", "goryeo4.json"],
+      "idRanges": ["G001-G100", "G101-G200", "G201-G350", "G351-G450"],
+      "difficultyCount": { "easy": 135, "medium": 225, "hard": 90 }
     },
     {
       "era": "조선",
       "prefix": "J",
       "range": "1392 ~ 1863 (흥선대원군 집권 이전)",
-      "totalQuestions": 580,
-      "files": ["joseon.json", "joseon2.json", "joseon3.json", "joseon4.json"],
-      "idRanges": ["J001-J150", "J151-J300", "J301-J550", "J551-J580"],
-      "difficultyCount": { "easy": 174, "medium": 290, "hard": 116 }
+      "totalQuestions": 680,
+      "files": ["joseon.json", "joseon2.json", "joseon3.json", "joseon4.json", "joseon5.json"],
+      "idRanges": ["J001-J150", "J151-J300", "J301-J550", "J551-J580", "J581-J680"],
+      "difficultyCount": { "easy": 204, "medium": 340, "hard": 136 }
     },
     {
       "era": "근대",
       "prefix": "M",
       "range": "1876 (개항) ~ 1945 (광복)",
-      "totalQuestions": 400,
-      "files": ["modern.json", "modern2.json", "modern3.json"],
-      "idRanges": ["M001-M100", "M101-M200", "M201-M400"],
-      "difficultyCount": { "easy": 120, "medium": 200, "hard": 80 }
+      "totalQuestions": 500,
+      "files": ["modern.json", "modern2.json", "modern3.json", "modern4.json"],
+      "idRanges": ["M001-M100", "M101-M200", "M201-M400", "M401-M500"],
+      "difficultyCount": { "easy": 150, "medium": 250, "hard": 100 }
     },
     {
       "era": "현대",
       "prefix": "C",
       "range": "1945 ~ 현재",
-      "totalQuestions": 390,
-      "files": ["contemporary.json", "contemporary2.json", "contemporary3.json", "contemporary4.json"],
-      "idRanges": ["C001-C050", "C051-C100", "C101-C350", "C351-C390"],
-      "difficultyCount": { "easy": 119, "medium": 166, "hard": 105 }
+      "totalQuestions": 490,
+      "files": ["contemporary.json", "contemporary2.json", "contemporary3.json", "contemporary4.json", "contemporary5.json"],
+      "idRanges": ["C001-C050", "C051-C100", "C101-C350", "C351-C390", "C391-C490"],
+      "difficultyCount": { "easy": 149, "medium": 216, "hard": 125 }
     }
   ]
 }

@@ -1,20 +1,25 @@
 import ancient from "../../../content/quiz/ancient.json";
 import ancient2 from "../../../content/quiz/ancient2.json";
 import ancient3 from "../../../content/quiz/ancient3.json";
+import ancient4 from "../../../content/quiz/ancient4.json";
 import goryeo from "../../../content/quiz/goryeo.json";
 import goryeo2 from "../../../content/quiz/goryeo2.json";
 import goryeo3 from "../../../content/quiz/goryeo3.json";
+import goryeo4 from "../../../content/quiz/goryeo4.json";
 import joseon from "../../../content/quiz/joseon.json";
 import joseon2 from "../../../content/quiz/joseon2.json";
 import joseon3 from "../../../content/quiz/joseon3.json";
 import joseon4 from "../../../content/quiz/joseon4.json";
+import joseon5 from "../../../content/quiz/joseon5.json";
 import modern from "../../../content/quiz/modern.json";
 import modern2 from "../../../content/quiz/modern2.json";
 import modern3 from "../../../content/quiz/modern3.json";
+import modern4 from "../../../content/quiz/modern4.json";
 import contemporary from "../../../content/quiz/contemporary.json";
 import contemporary2 from "../../../content/quiz/contemporary2.json";
 import contemporary3 from "../../../content/quiz/contemporary3.json";
 import contemporary4 from "../../../content/quiz/contemporary4.json";
+import contemporary5 from "../../../content/quiz/contemporary5.json";
 import type { Difficulty, Era, EraFile, Question } from "../types";
 import type { StageDef } from "./stages";
 
@@ -24,20 +29,25 @@ const rawFiles = [
   ancient,
   ancient2,
   ancient3,
+  ancient4,
   goryeo,
   goryeo2,
   goryeo3,
+  goryeo4,
   joseon,
   joseon2,
   joseon3,
   joseon4,
+  joseon5,
   modern,
   modern2,
   modern3,
+  modern4,
   contemporary,
   contemporary2,
   contemporary3,
   contemporary4,
+  contemporary5,
 ] as unknown as EraFile[];
 
 export const allQuestions: Question[] = rawFiles.flatMap((f) => f.questions);
