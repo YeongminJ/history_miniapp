@@ -1,26 +1,33 @@
 /**
- * 일일 미션 백엔드 호출. 서버: history-king-noti-api.
- * 모든 호출은 best-effort — 실패해도 게임 흐름엔 영향 없음.
+ * 미션 백엔드 호출. best-effort — 실패해도 게임 흐름엔 영향 없음.
+ * 사용자 등록·시간 변경은 `useReminderStore` 가 담당.
  */
 
 const BASE = (
   (import.meta.env.VITE_REMINDER_API_BASE as string | undefined) ?? ""
 ).replace(/\/$/, "");
 
+export type MissionType =
+  | "daily_1"
+  | "daily_3"
+  | "daily_5"
+  | "combo_10"
+  | "streak_3"
+  | "streak_7"
+  | "streak_30";
+
 export interface MissionStatus {
   pendingPoints: number;
-  claimedToday: boolean;
+  currentStreak: number;
+  claimedTypes: MissionType[];
   today: string;
 }
 
-export interface ClaimResult {
+export interface ClaimResult extends MissionStatus {
   ok: boolean;
-  /** false 면 오늘 이미 받음. */
   claimed: boolean;
-  /** 가중 랜덤으로 결정된 보상 액수 (claimed=true 일 때만 의미 있음). */
+  type: MissionType;
   awardedAmount: number;
-  pendingPoints: number;
-  today: string;
 }
 
 export async function fetchMissionStatus(
@@ -41,28 +48,36 @@ export async function fetchMissionStatus(
   }
 }
 
-export async function claimDailyMission(
+export async function claimMission(
   hash: string,
+  type: MissionType,
 ): Promise<ClaimResult | null> {
   if (!BASE) return null;
   try {
-    const res = await fetch(`${BASE}/missions/claim-daily`, {
+    const res = await fetch(`${BASE}/missions/claim`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hash }),
+      body: JSON.stringify({ hash, type }),
     });
     if (!res.ok) return null;
     return (await res.json()) as ClaimResult;
   } catch (err) {
-    console.warn("[mission] claim failed", err);
+    console.warn("[mission] claim failed", err, type);
     return null;
   }
 }
 
-/**
- * 토스 포인트 발행 성공 후 서버 누적 포인트 차감.
- * `grantKey` 는 토스가 돌려준 reward key — 서버 로깅용.
- */
+/** KST 현재 날짜 'YYYY-MM-DD' */
+export function getCurrentKstDate(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+/** 토스 포인트 발행 후 누적 차감. */
 export async function redeemMissionPoints(
   hash: string,
   amount: number,

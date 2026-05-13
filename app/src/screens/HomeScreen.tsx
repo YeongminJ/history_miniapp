@@ -56,7 +56,9 @@ export function HomeScreen() {
   const totalScore = useProgressStore((s) => s.totalScore);
   const authHash = useAuthStore((s) => s.hash);
   const pendingPoints = useMissionStore((s) => s.pendingPoints);
-  const claimedToday = useMissionStore((s) => s.claimedToday);
+  const claimedTypes = useMissionStore((s) => s.claimedTypes);
+  const todayClearCount = useMissionStore((s) => s.todayClearCount);
+  const currentStreak = useMissionStore((s) => s.currentStreak);
   const showRunner = isDevMode();
   const showDevTools = isDevMode();
   const showMission = isPromotionEnabled();
@@ -121,7 +123,9 @@ export function HomeScreen() {
 
         {showMission ? (
           <MissionTodayCard
-            claimedToday={claimedToday}
+            claimedTypes={claimedTypes}
+            todayClearCount={todayClearCount}
+            currentStreak={currentStreak}
             pendingPoints={pendingPoints}
             redeeming={redeeming}
             onRedeem={handleHomeRedeem}
@@ -226,18 +230,44 @@ export function HomeScreen() {
 }
 
 function MissionTodayCard({
-  claimedToday,
+  claimedTypes,
+  todayClearCount,
+  currentStreak,
   pendingPoints,
   redeeming,
   onRedeem,
 }: {
-  claimedToday: boolean;
+  claimedTypes: string[];
+  todayClearCount: number;
+  currentStreak: number;
   pendingPoints: number;
   redeeming: boolean;
   onRedeem: () => void;
 }) {
   const ready = pendingPoints >= REDEEM_THRESHOLD;
   const progress = Math.min(pendingPoints, REDEEM_THRESHOLD);
+  const already = new Set(claimedTypes);
+  const dailyClaimedCount =
+    Number(already.has("daily_1")) +
+    Number(already.has("daily_3")) +
+    Number(already.has("daily_5"));
+  const nextStreakMilestone =
+    currentStreak < 3
+      ? 3
+      : currentStreak < 7
+        ? 7
+        : currentStreak < 30
+          ? 30
+          : null;
+  const nextDailyGoal =
+    todayClearCount < 1
+      ? "1판 클리어"
+      : todayClearCount < 3
+        ? `3판까지 ${3 - todayClearCount}판`
+        : todayClearCount < 5
+          ? `5판까지 ${5 - todayClearCount}판`
+          : null;
+
   return (
     <div
       style={{
@@ -260,7 +290,8 @@ function MissionTodayCard({
         }}
       >
         <div style={{ fontSize: 13, fontWeight: 700, color: "#5D4037" }}>
-          🎯 오늘의 미션
+          🎯 오늘의 미션 ({dailyClaimedCount}/3)
+          {currentStreak > 0 ? ` · 🔥 ${currentStreak}일 연속` : ""}
         </div>
         <div style={{ fontSize: 12, color: "#8D6E63", fontWeight: 600 }}>
           누적 {progress} / {REDEEM_THRESHOLD}원
@@ -272,13 +303,20 @@ function MissionTodayCard({
           color: ready ? "#E65100" : "#616161",
           fontWeight: ready ? 700 : 400,
           marginBottom: 10,
+          lineHeight: 1.55,
         }}
       >
         {ready
           ? `💎 ${pendingPoints}원 모였어요! 광고 보고 토스 포인트로 받을 수 있어요`
-          : claimedToday
-            ? "✓ 오늘은 완료! 내일 다시 도전해 보세요"
-            : "던전 스테이지 1개 클리어하면 보상 적립"}
+          : nextDailyGoal
+            ? `· ${nextDailyGoal} 더 클리어하면 보상 적립`
+            : "✓ 오늘 일일 미션 완료!"}
+        {nextStreakMilestone && !ready ? (
+          <>
+            <br />· 🔥 {nextStreakMilestone}일 연속 출석까지{" "}
+            {nextStreakMilestone - currentStreak}일
+          </>
+        ) : null}
       </div>
       <div
         style={{

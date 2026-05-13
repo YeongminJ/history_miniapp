@@ -76,8 +76,8 @@ export const notifications = sqliteTable(
 );
 
 /**
- * 일일 미션 클레임 이력. (user_key, date) 1회 보장.
- * 같은 KST 날짜에 두 번 받기 시도해도 두 번째는 conflict 로 차단.
+ * 미션 클레임 이력. (user_key, date, type) 1회 보장.
+ * type: 'daily_1' | 'daily_3' | 'daily_5' | 'combo_10' | 'streak_3' | 'streak_7' | 'streak_30'
  */
 export const missionClaims = sqliteTable(
   "mission_claims",
@@ -86,9 +86,17 @@ export const missionClaims = sqliteTable(
     userKey: text("user_key").notNull(),
     /** KST 'YYYY-MM-DD' */
     date: text("date").notNull(),
+    /** 미션 type. 기존 daily 한 종류는 'daily_1' 로 통합. */
+    type: text("type").notNull().default("daily_1"),
+    /** 적립된 금액 (원). */
+    amount: integer("amount").notNull().default(0),
     claimedAt: integer("claimed_at").notNull(),
   },
   (t) => ({
-    uniq: uniqueIndex("mission_claims_user_date").on(t.userKey, t.date),
+    uniq: uniqueIndex("mission_claims_user_date_type").on(
+      t.userKey,
+      t.date,
+      t.type,
+    ),
   }),
 );

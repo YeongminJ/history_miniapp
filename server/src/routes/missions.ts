@@ -8,26 +8,61 @@ import type { Env } from "../env";
 import { nowKstDate } from "../lib/time";
 
 /**
- * 일일 미션 (현재: 던전 스테이지 1회 클리어).
+ * 미션 시스템.
  *
- * 1) 클라가 클리어 → `POST /missions/claim-daily` 로 보상 청구 → +1 누적
- * 2) 같은 사용자 같은 KST 날짜 두 번째 호출은 멱등 (claimed: false 반환)
- * 3) 누적 10원 도달 시 클라가 토스 포인트 redeem 트리거 가능
- *    (실제 토스 API 호출은 콘솔 reward 등록 후 별도 단계)
+ * 종류 (모두 누적 포인트로 적립; 10원 도달 시 광고 보고 토스 포인트 전환):
+ *  - daily_1: 오늘 첫 클리어 (가중랜덤 1~5원)
+ *  - daily_3: 오늘 3판 클리어 (+2원)
+ *  - daily_5: 오늘 5판 클리어 (+3원)
+ *  - combo_10: 한 게임 내 10문제 연속 정답 (+1원, 하루 1회)
+ *  - streak_3: 3일 연속 출석 (+2원)
+ *  - streak_7: 7일 연속 출석 (+5원)
+ *  - streak_30: 30일 연속 출석 (+10원)
+ *
+ * 멱등성: (user_key, date, type) UNIQUE. 같은 KST 날짜에 같은 type 으로 두 번
+ * 호출되면 두 번째는 conflict 로 차단되어 추가 적립 없음.
  */
 
+type ClaimType =
+  | "daily_1"
+  | "daily_3"
+  | "daily_5"
+  | "combo_10"
+  | "streak_3"
+  | "streak_7"
+  | "streak_30";
+
+const STREAK_REQUIRED: Record<string, number> = {
+  streak_3: 3,
+  streak_7: 7,
+  streak_30: 30,
+};
+
+const FIXED_AMOUNT: Record<string, number> = {
+  daily_3: 2,
+  daily_5: 3,
+  combo_10: 1,
+  streak_3: 2,
+  streak_7: 5,
+  streak_30: 10,
+};
+
 /**
- * 일일 미션 보상 가중 랜덤 추첨.
+ * daily_1 가중 랜덤 추첨.
  *  1원 40% / 2원 30% / 3원 15% / 4원 10% / 5원 5%
- * 클라가 조작하지 못하도록 서버에서만 결정.
  */
-function drawDailyReward(): number {
+function drawDaily1Amount(): number {
   const r = Math.random();
   if (r < 0.4) return 1;
   if (r < 0.7) return 2;
   if (r < 0.85) return 3;
   if (r < 0.95) return 4;
   return 5;
+}
+
+function amountForType(type: ClaimType): number {
+  if (type === "daily_1") return drawDaily1Amount();
+  return FIXED_AMOUNT[type] ?? 0;
 }
 
 const route = new Hono<{ Bindings: Env }>();
@@ -40,50 +75,98 @@ route.post("/status", zValidator("json", hashSchema), async (c) => {
   const { hash } = c.req.valid("json");
   const db = getDb(c.env.DB);
   const today = nowKstDate(new Date());
-  const [user, claim] = await Promise.all([
+  const [user, todayClaims] = await Promise.all([
     db
-      .select({ pendingPoints: users.pendingPoints })
+      .select({
+        pendingPoints: users.pendingPoints,
+        currentStreak: users.currentStreak,
+      })
       .from(users)
       .where(eq(users.userKey, hash))
       .get(),
     db
-      .select()
+      .select({ type: missionClaims.type })
       .from(missionClaims)
       .where(
         and(eq(missionClaims.userKey, hash), eq(missionClaims.date, today)),
       )
-      .get(),
+      .all(),
   ]);
+  const claimedTypes = todayClaims.map((c) => c.type);
   return c.json({
     pendingPoints: user?.pendingPoints ?? 0,
-    claimedToday: !!claim,
+    currentStreak: user?.currentStreak ?? 0,
+    claimedTypes,
     today,
   });
 });
 
-route.post("/claim-daily", zValidator("json", hashSchema), async (c) => {
-  const { hash } = c.req.valid("json");
+const claimSchema = z.object({
+  hash: z.string().min(1).max(200),
+  type: z.enum([
+    "daily_1",
+    "daily_3",
+    "daily_5",
+    "combo_10",
+    "streak_3",
+    "streak_7",
+    "streak_30",
+  ]),
+});
+
+route.post("/claim", zValidator("json", claimSchema), async (c) => {
+  const { hash, type } = c.req.valid("json");
   const db = getDb(c.env.DB);
   const today = nowKstDate(new Date());
   const now = Date.now();
 
-  // user row 보장 (알림 미등록 사용자도 미션은 받을 수 있음).
+  // user row 보장
   await db
     .insert(users)
     .values({ userKey: hash, createdAt: now, updatedAt: now })
     .onConflictDoNothing();
 
-  // mission_claims 에 insert. 이미 있으면 conflict → returning 빈 배열.
+  // streak 타입은 서버에서 current_streak 확인
+  if (type === "streak_3" || type === "streak_7" || type === "streak_30") {
+    const u = await db
+      .select({ currentStreak: users.currentStreak })
+      .from(users)
+      .where(eq(users.userKey, hash))
+      .get();
+    const need = STREAK_REQUIRED[type] ?? Infinity;
+    if (!u || u.currentStreak < need) {
+      return c.json(
+        {
+          ok: false,
+          reason: "streak_not_reached",
+          required: need,
+          currentStreak: u?.currentStreak ?? 0,
+        },
+        400,
+      );
+    }
+  }
+
+  const awardedAmount = amountForType(type);
+  if (awardedAmount <= 0) {
+    return c.json({ ok: false, reason: "invalid_type" }, 400);
+  }
+
+  // 멱등 insert
   const inserted = await db
     .insert(missionClaims)
-    .values({ userKey: hash, date: today, claimedAt: now })
+    .values({
+      userKey: hash,
+      date: today,
+      type,
+      amount: awardedAmount,
+      claimedAt: now,
+    })
     .onConflictDoNothing()
     .returning();
   const claimed = inserted.length > 0;
 
-  let awardedAmount = 0;
   if (claimed) {
-    awardedAmount = drawDailyReward();
     await db
       .update(users)
       .set({
@@ -92,9 +175,75 @@ route.post("/claim-daily", zValidator("json", hashSchema), async (c) => {
       })
       .where(eq(users.userKey, hash));
     console.log(
-      "[mission/claim-daily]",
-      JSON.stringify({ hash, awardedAmount, today }),
+      "[mission/claim]",
+      JSON.stringify({ hash, type, awardedAmount, today }),
     );
+  }
+
+  const after = await db
+    .select({
+      pendingPoints: users.pendingPoints,
+      currentStreak: users.currentStreak,
+    })
+    .from(users)
+    .where(eq(users.userKey, hash))
+    .get();
+
+  // 응답에 오늘 claimed types 도 함께 → 클라가 store sync 가능
+  const todayClaims = await db
+    .select({ type: missionClaims.type })
+    .from(missionClaims)
+    .where(
+      and(eq(missionClaims.userKey, hash), eq(missionClaims.date, today)),
+    )
+    .all();
+
+  return c.json({
+    ok: true,
+    claimed,
+    type,
+    awardedAmount: claimed ? awardedAmount : 0,
+    pendingPoints: after?.pendingPoints ?? 0,
+    currentStreak: after?.currentStreak ?? 0,
+    claimedTypes: todayClaims.map((c) => c.type),
+    today,
+  });
+});
+
+// 호환: 기존 /claim-daily 는 type=daily_1 로 라우팅.
+route.post("/claim-daily", zValidator("json", hashSchema), async (c) => {
+  const { hash } = c.req.valid("json");
+  const db = getDb(c.env.DB);
+  const today = nowKstDate(new Date());
+  const now = Date.now();
+
+  await db
+    .insert(users)
+    .values({ userKey: hash, createdAt: now, updatedAt: now })
+    .onConflictDoNothing();
+
+  const awardedAmount = drawDaily1Amount();
+  const inserted = await db
+    .insert(missionClaims)
+    .values({
+      userKey: hash,
+      date: today,
+      type: "daily_1",
+      amount: awardedAmount,
+      claimedAt: now,
+    })
+    .onConflictDoNothing()
+    .returning();
+  const claimed = inserted.length > 0;
+
+  if (claimed) {
+    await db
+      .update(users)
+      .set({
+        pendingPoints: sql`${users.pendingPoints} + ${awardedAmount}`,
+        updatedAt: now,
+      })
+      .where(eq(users.userKey, hash));
   }
 
   const after = await db
@@ -106,7 +255,7 @@ route.post("/claim-daily", zValidator("json", hashSchema), async (c) => {
   return c.json({
     ok: true,
     claimed,
-    awardedAmount,
+    awardedAmount: claimed ? awardedAmount : 0,
     pendingPoints: after?.pendingPoints ?? 0,
     today,
   });
@@ -115,15 +264,9 @@ route.post("/claim-daily", zValidator("json", hashSchema), async (c) => {
 const redeemSchema = z.object({
   hash: z.string().min(1).max(200),
   amount: z.number().int().positive(),
-  /** 토스가 grantPromotionReward 응답으로 돌려준 reward key. 로깅용. */
   grantKey: z.string().min(1).max(200),
 });
 
-/**
- * 토스 포인트 발행 성공 후 누적 포인트 차감.
- * 클라가 SDK 호출 → success → 이 엔드포인트 호출.
- * pendingPoints 가 amount 보다 적으면 차감 없이 거부.
- */
 route.post("/redeem", zValidator("json", redeemSchema), async (c) => {
   const { hash, amount, grantKey } = c.req.valid("json");
   const db = getDb(c.env.DB);
@@ -161,22 +304,26 @@ route.post("/redeem", zValidator("json", redeemSchema), async (c) => {
     JSON.stringify({ hash, amount, grantKey }),
   );
 
-  const claim = await db
-    .select()
+  const todayClaims = await db
+    .select({ type: missionClaims.type })
     .from(missionClaims)
     .where(
       and(eq(missionClaims.userKey, hash), eq(missionClaims.date, today)),
     )
-    .get();
+    .all();
   const after = await db
-    .select({ pendingPoints: users.pendingPoints })
+    .select({
+      pendingPoints: users.pendingPoints,
+      currentStreak: users.currentStreak,
+    })
     .from(users)
     .where(eq(users.userKey, hash))
     .get();
 
   return c.json({
     pendingPoints: after?.pendingPoints ?? 0,
-    claimedToday: !!claim,
+    currentStreak: after?.currentStreak ?? 0,
+    claimedTypes: todayClaims.map((c) => c.type),
     today,
   });
 });

@@ -12,9 +12,11 @@ const BASE_URL =
 
 /**
  * 스트릭 카운터 갱신. `userHash` 는 `getAnonymousKey()` 결과 (DB users.user_key PK).
- * 클리어 시점에 호출하면 cron 의 streak_warn 발송 판단에 쓰여요.
+ * 응답에 갱신된 currentStreak 가 함께 옴 — 클리어 시점 마일스톤 자동 claim 에 사용.
  */
-export async function recordPlay(userHash: string): Promise<boolean> {
+export async function recordPlay(
+  userHash: string,
+): Promise<{ ok: true; currentStreak: number } | { ok: false }> {
   try {
     const res = await fetch(
       `${BASE_URL}/api/users/${encodeURIComponent(userHash)}/play`,
@@ -24,10 +26,14 @@ export async function recordPlay(userHash: string): Promise<boolean> {
         body: JSON.stringify({}),
       },
     );
-    return res.ok;
+    if (!res.ok) return { ok: false };
+    const data = (await res.json().catch(() => null)) as {
+      currentStreak?: number;
+    } | null;
+    return { ok: true, currentStreak: data?.currentStreak ?? 0 };
   } catch (err) {
     console.warn("[api] recordPlay failed", err);
-    return false;
+    return { ok: false };
   }
 }
 

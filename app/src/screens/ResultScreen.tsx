@@ -11,7 +11,7 @@ import {
 import { useAndroidBack } from "../hooks/useAndroidBack";
 import { useRedeemPoints } from "../hooks/useRedeemPoints";
 import { recordPlay } from "../lib/api";
-import { claimDailyMission } from "../lib/mission";
+import { claimMission, getCurrentKstDate, type MissionType } from "../lib/mission";
 import { isPromotionEnabled } from "../lib/promotion";
 import { shareResult } from "../lib/share";
 import { trackClick, trackScreen } from "../lib/track";
@@ -22,6 +22,16 @@ import { REDEEM_THRESHOLD, useMissionStore } from "../store/useMissionStore";
 import { useNotificationStore } from "../store/useNotificationStore";
 import { useProgressStore } from "../store/useProgressStore";
 import { useReminderStore } from "../store/useReminderStore";
+
+const MISSION_LABEL: Record<MissionType, string> = {
+  daily_1: "오늘 첫 클리어",
+  daily_3: "오늘 3판 클리어",
+  daily_5: "오늘 5판 클리어",
+  combo_10: "10연속 정답",
+  streak_3: "3일 연속 출석",
+  streak_7: "7일 연속 출석",
+  streak_30: "30일 연속 출석",
+};
 import type { Question } from "../types";
 
 export function ResultScreen() {
@@ -46,9 +56,14 @@ export function ResultScreen() {
   const [showAllExplanations, setShowAllExplanations] = useState(true);
   const [showNotiPrompt, setShowNotiPrompt] = useState(false);
   const pendingPoints = useMissionStore((s) => s.pendingPoints);
-  const claimedToday = useMissionStore((s) => s.claimedToday);
-  const applyClaimResult = useMissionStore((s) => s.applyClaimResult);
+  const currentStreak = useMissionStore((s) => s.currentStreak);
+  const claimedTypes = useMissionStore((s) => s.claimedTypes);
+  const todayClearCount = useMissionStore((s) => s.todayClearCount);
+  const incrementTodayClear = useMissionStore((s) => s.incrementTodayClear);
+  const setStatus = useMissionStore((s) => s.setStatus);
+  const setCurrentStreak = useMissionStore((s) => s.setCurrentStreak);
   const [claiming, setClaiming] = useState(false);
+  const claimedToday = claimedTypes.includes("daily_1");
   const { redeeming, redeem: handleRedeemPoints } = useRedeemPoints("result");
 
   const correctCount = answers.filter((a) => a.correct).length;
@@ -89,11 +104,19 @@ export function ResultScreen() {
     });
     recorded.current = true;
 
-    // 이미 등록된 사용자: 클리어 시에만 서버 스트릭 갱신.
-    // hash 는 익명 식별자이므로 토스 로그인 트리거 안 함.
+    // cleared 시 store 의 오늘 클리어 카운트 +1 (미션 진행도용)
+    if (cleared) {
+      incrementTodayClear(getCurrentKstDate());
+    }
+
+    // 등록된 사용자: 클리어 시에만 서버 스트릭 갱신 → 응답의 currentStreak 동기화.
     if (notiStatus === "registered" && cleared) {
       const hash = useAuthStore.getState().hash;
-      if (hash) void recordPlay(hash);
+      if (hash) {
+        void recordPlay(hash).then((r) => {
+          if (r.ok) setCurrentStreak(r.currentStreak);
+        });
+      }
     }
 
     // 미등록/거절 상태: 로그인은 사용자가 "등록" 버튼 눌렀을 때만 시작.
@@ -132,19 +155,50 @@ export function ResultScreen() {
     setClaiming(true);
     trackClick("press_claim_mission", { era, stage_index: stageIndex });
     try {
-      const result = await claimDailyMission(hash);
-      if (result) {
-        applyClaimResult(result);
-        trackClick("mission_claim_result", {
-          claimed: result.claimed,
-          awarded: result.awardedAmount,
-          pending: result.pendingPoints,
+      // 충족된 모든 미션 type 을 순차 claim
+      const already = new Set(claimedTypes);
+      const candidates: MissionType[] = [];
+      if (!already.has("daily_1")) candidates.push("daily_1");
+      if (todayClearCount >= 3 && !already.has("daily_3"))
+        candidates.push("daily_3");
+      if (todayClearCount >= 5 && !already.has("daily_5"))
+        candidates.push("daily_5");
+      if (maxCombo >= 10 && !already.has("combo_10"))
+        candidates.push("combo_10");
+      if (currentStreak >= 3 && !already.has("streak_3"))
+        candidates.push("streak_3");
+      if (currentStreak >= 7 && !already.has("streak_7"))
+        candidates.push("streak_7");
+      if (currentStreak >= 30 && !already.has("streak_30"))
+        candidates.push("streak_30");
+
+      let totalAwarded = 0;
+      const awardedList: Array<{ type: MissionType; amount: number }> = [];
+      for (const type of candidates) {
+        const r = await claimMission(hash, type);
+        if (!r) continue;
+        // 응답으로 store 통째 갱신 (pendingPoints / claimedTypes / currentStreak)
+        setStatus({
+          pendingPoints: r.pendingPoints,
+          currentStreak: r.currentStreak,
+          claimedTypes: r.claimedTypes,
+          today: r.today,
         });
-        if (result.claimed && result.awardedAmount > 0) {
-          window.alert(
-            `🎉 오늘의 미션 보상으로 ${result.awardedAmount}원을 받았어요!`,
-          );
+        if (r.claimed && r.awardedAmount > 0) {
+          totalAwarded += r.awardedAmount;
+          awardedList.push({ type, amount: r.awardedAmount });
         }
+      }
+
+      trackClick("mission_claim_result", {
+        types: awardedList.map((a) => a.type).join(","),
+        total: totalAwarded,
+      });
+      if (totalAwarded > 0) {
+        const breakdown = awardedList
+          .map((a) => `· ${MISSION_LABEL[a.type]} +${a.amount}원`)
+          .join("\n");
+        window.alert(`🎉 +${totalAwarded}원 적립!\n\n${breakdown}`);
       }
     } finally {
       setClaiming(false);
@@ -297,9 +351,13 @@ export function ResultScreen() {
           </div>
         </div>
 
-        {cleared && isPromotionEnabled() ? (
+        {isPromotionEnabled() ? (
           <MissionRewardCard
-            claimedToday={claimedToday}
+            cleared={cleared}
+            claimedTypes={claimedTypes}
+            todayClearCount={todayClearCount}
+            currentStreak={currentStreak}
+            maxCombo={maxCombo}
             pendingPoints={pendingPoints}
             claiming={claiming}
             redeeming={redeeming}
@@ -456,14 +514,22 @@ export function ResultScreen() {
 }
 
 function MissionRewardCard({
-  claimedToday,
+  cleared,
+  claimedTypes,
+  todayClearCount,
+  currentStreak,
+  maxCombo,
   pendingPoints,
   claiming,
   redeeming,
   onClaim,
   onRedeem,
 }: {
-  claimedToday: boolean;
+  cleared: boolean;
+  claimedTypes: MissionType[];
+  todayClearCount: number;
+  currentStreak: number;
+  maxCombo: number;
   pendingPoints: number;
   claiming: boolean;
   redeeming: boolean;
@@ -472,6 +538,24 @@ function MissionRewardCard({
 }) {
   const ready = pendingPoints >= REDEEM_THRESHOLD;
   const progress = Math.min(pendingPoints, REDEEM_THRESHOLD);
+  const already = new Set(claimedTypes);
+
+  const eligible: { type: MissionType; label: string }[] = [];
+  if (cleared && !already.has("daily_1"))
+    eligible.push({ type: "daily_1", label: "오늘 첫 클리어 (+1~5원)" });
+  if (cleared && todayClearCount >= 3 && !already.has("daily_3"))
+    eligible.push({ type: "daily_3", label: "오늘 3판 클리어 (+2원)" });
+  if (cleared && todayClearCount >= 5 && !already.has("daily_5"))
+    eligible.push({ type: "daily_5", label: "오늘 5판 클리어 (+3원)" });
+  if (maxCombo >= 10 && !already.has("combo_10"))
+    eligible.push({ type: "combo_10", label: "10연속 정답 (+1원)" });
+  if (currentStreak >= 30 && !already.has("streak_30"))
+    eligible.push({ type: "streak_30", label: "30일 연속 출석 (+10원)" });
+  else if (currentStreak >= 7 && !already.has("streak_7"))
+    eligible.push({ type: "streak_7", label: "7일 연속 출석 (+5원)" });
+  else if (currentStreak >= 3 && !already.has("streak_3"))
+    eligible.push({ type: "streak_3", label: "3일 연속 출석 (+2원)" });
+
   return (
     <div
       style={{
@@ -492,7 +576,8 @@ function MissionRewardCard({
         }}
       >
         <div style={{ fontSize: 13, fontWeight: 700, color: "#5D4037" }}>
-          🎯 오늘의 미션 · 던전 클리어
+          🎯 오늘의 미션 · {todayClearCount}판 클리어
+          {currentStreak > 0 ? ` · 🔥 ${currentStreak}일 연속` : ""}
         </div>
         <div style={{ fontSize: 12, color: "#8D6E63", fontWeight: 600 }}>
           누적 {progress} / {REDEEM_THRESHOLD}원
@@ -516,7 +601,7 @@ function MissionRewardCard({
           }}
         />
       </div>
-      {claimedToday ? (
+      {eligible.length === 0 ? (
         <div
           style={{
             padding: "12px",
@@ -528,28 +613,56 @@ function MissionRewardCard({
             fontWeight: 600,
           }}
         >
-          ✓ 오늘은 이미 받았어요. 내일 다시 도전!
+          {cleared
+            ? "✓ 받을 수 있는 보상 모두 받았어요"
+            : "스테이지 클리어하면 보상이 열려요"}
         </div>
       ) : (
-        <button
-          type="button"
-          disabled={claiming}
-          onClick={onClaim}
-          style={{
-            width: "100%",
-            padding: "14px",
-            border: "none",
-            borderRadius: 10,
-            background: "linear-gradient(135deg, #FFB300 0%, #FF8F00 100%)",
-            color: "#FFFFFF",
-            fontSize: 15,
-            fontWeight: 800,
-            cursor: claiming ? "wait" : "pointer",
-            opacity: claiming ? 0.7 : 1,
-          }}
-        >
-          {claiming ? "받는 중..." : "🎁 미션 보상 받기"}
-        </button>
+        <>
+          <div
+            style={{
+              background: "#FFFDE7",
+              borderRadius: 10,
+              padding: "10px 12px",
+              marginBottom: 10,
+            }}
+          >
+            {eligible.map((e) => (
+              <div
+                key={e.type}
+                style={{
+                  fontSize: 13,
+                  color: "#5D4037",
+                  padding: "4px 0",
+                  fontWeight: 600,
+                }}
+              >
+                ✓ {e.label}
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            disabled={claiming}
+            onClick={onClaim}
+            style={{
+              width: "100%",
+              padding: "14px",
+              border: "none",
+              borderRadius: 10,
+              background: "linear-gradient(135deg, #FFB300 0%, #FF8F00 100%)",
+              color: "#FFFFFF",
+              fontSize: 15,
+              fontWeight: 800,
+              cursor: claiming ? "wait" : "pointer",
+              opacity: claiming ? 0.7 : 1,
+            }}
+          >
+            {claiming
+              ? "받는 중..."
+              : `🎁 보상 ${eligible.length}개 모두 받기`}
+          </button>
+        </>
       )}
       {ready ? (
         <button
