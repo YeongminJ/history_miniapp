@@ -1,6 +1,7 @@
 import { Button } from "@toss/tds-mobile";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { isPromotionEnabled } from "../lib/promotion";
 import { trackClick, trackScreen } from "../lib/track";
 import { useEffect } from "react";
 import { useOnboardingStore } from "../store/useOnboardingStore";
@@ -11,10 +12,11 @@ export function OnboardingScreen() {
   const setEnabled = useReminderStore((s) => s.setEnabled);
   const setTime = useReminderStore((s) => s.setTime);
 
-  const [optIn, setOptIn] = useState(true); // 기본 ON
+  const [optIn, setOptIn] = useState(false); // 디폴트 OFF — 토스 OAuth 부담 없이 빠르게 진입
   const [hour, setHour] = useState(21);
   const [minute, setMinute] = useState(0);
   const [busy, setBusy] = useState(false);
+  const promotionOn = isPromotionEnabled();
 
   useEffect(() => {
     trackScreen("screen_onboarding");
@@ -95,14 +97,18 @@ export function OnboardingScreen() {
           <div
             style={{
               fontSize: 15,
-              color: "rgba(255,255,255,0.75)",
-              lineHeight: 1.5,
+              color: "rgba(255,255,255,0.78)",
+              lineHeight: 1.55,
               marginTop: 8,
             }}
           >
             매일 한 문제씩 풀면 한국사가 쉬워져요.
-            <br />
-            원하는 시간에 학습 알림을 받을 수 있어요.
+            {promotionOn ? (
+              <>
+                <br />
+                던전 클리어할 때마다 토스 포인트 1~5원 적립!
+              </>
+            ) : null}
           </div>
         </div>
 
@@ -137,6 +143,10 @@ export function OnboardingScreen() {
                 }}
               >
                 정한 시간에 오늘의 한국사 문제를 보내드려요.
+                <br />
+                <span style={{ color: "rgba(255,255,255,0.45)" }}>
+                  (켜면 토스 로그인이 필요해요)
+                </span>
               </div>
             </div>
             <button
@@ -228,25 +238,8 @@ export function OnboardingScreen() {
           onClick={handleStart}
           loading={busy}
         >
-          시작하기
+          {optIn ? "알림 받고 시작하기" : "1초만에 시작하기"}
         </Button>
-        <button
-          type="button"
-          onClick={handleSkip}
-          disabled={busy}
-          style={{
-            marginTop: 10,
-            padding: "10px",
-            background: "transparent",
-            border: "none",
-            color: "rgba(255,255,255,0.55)",
-            fontSize: 13,
-            cursor: "pointer",
-            width: "100%",
-          }}
-        >
-          알림 없이 시작
-        </button>
       </motion.div>
     </div>
   );

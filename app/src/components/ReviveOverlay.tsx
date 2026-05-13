@@ -72,29 +72,37 @@ export function ReviveOverlay({
                 marginBottom: 10,
               }}
             >
-              ⚠ HP 소진
+              ⚠ HP 0
             </div>
             <div
               style={{
-                fontSize: 26,
+                fontSize: 28,
                 fontWeight: 900,
                 letterSpacing: 0.5,
                 marginBottom: 8,
               }}
             >
-              전투 이어하기
+              여기서 끝낼 거예요?
             </div>
             <div
               style={{
                 fontSize: 14,
-                color: "rgba(255,255,255,0.75)",
-                lineHeight: 1.55,
+                color: "rgba(255,255,255,0.78)",
+                lineHeight: 1.6,
                 marginBottom: 24,
               }}
             >
-              {adSupported
-                ? "광고를 보면 HP 1을 회복하고\n이 챕터를 계속 이어갈 수 있어요."
-                : "지금은 광고 이어하기를 사용할 수 없어요."}
+              {adSupported ? (
+                <>
+                  광고 1개만 보면 HP가 회복돼요.
+                  <br />
+                  <span style={{ color: theme.accent, fontWeight: 700 }}>
+                    이 챕터 클리어까지 한 번 더 기회!
+                  </span>
+                </>
+              ) : (
+                "지금은 광고 이어하기를 사용할 수 없어요."
+              )}
             </div>
 
             <button
@@ -123,9 +131,9 @@ export function ReviveOverlay({
               {!adSupported
                 ? "광고 기능 미지원"
                 : adReady
-                  ? "▶ 광고 보고 이어하기"
+                  ? "▶ 광고 1개 보고 부활하기"
                   : adLoading
-                    ? "광고 준비 중... (눌러도 준비 완료 후 재생)"
+                    ? "광고 준비 중... (눌러도 준비되면 자동 재생)"
                     : "광고 사용 불가"}
             </button>
 
@@ -134,18 +142,16 @@ export function ReviveOverlay({
               onClick={onGiveUp}
               style={{
                 width: "100%",
-                marginTop: 12,
-                padding: "14px",
-                borderRadius: 12,
-                fontSize: 14,
-                fontWeight: 700,
+                marginTop: 10,
+                padding: "10px",
                 background: "transparent",
-                color: "rgba(255,255,255,0.7)",
-                border: "1.5px solid rgba(255,255,255,0.2)",
+                color: "rgba(255,255,255,0.45)",
+                border: "none",
+                fontSize: 12,
                 cursor: "pointer",
               }}
             >
-              포기하고 결과 보기
+              그만 둘게요
             </button>
 
             <div

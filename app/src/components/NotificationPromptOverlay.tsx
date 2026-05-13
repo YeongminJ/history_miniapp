@@ -5,6 +5,7 @@ import {
   hhmmToMinute,
   minuteToHHMM,
 } from "../lib/api";
+import { isPromotionEnabled } from "../lib/promotion";
 
 interface Props {
   visible: boolean;
@@ -20,6 +21,7 @@ export function NotificationPromptOverlay({
   const [defaultMinute] = useState(() => getCurrentKstMinute());
   const [hhmm, setHhmm] = useState(() => minuteToHHMM(defaultMinute));
   const [submitting, setSubmitting] = useState(false);
+  const promotionOn = isPromotionEnabled();
 
   const handleRegister = async () => {
     if (submitting) return;
@@ -67,7 +69,9 @@ export function NotificationPromptOverlay({
               boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
             }}
           >
-            <div style={{ fontSize: 36, marginBottom: 8 }}>👑</div>
+            <div style={{ fontSize: 36, marginBottom: 8 }}>
+              {promotionOn ? "💰" : "👑"}
+            </div>
             <div
               style={{
                 fontSize: 20,
@@ -76,19 +80,31 @@ export function NotificationPromptOverlay({
                 marginBottom: 6,
               }}
             >
-              매일 이 시간에 알림 받을까요?
+              {promotionOn
+                ? "매일 1~5원 적립 받기"
+                : "매일 이 시간에 알림 받을까요?"}
             </div>
             <div
               style={{
                 fontSize: 14,
                 color: "#616161",
-                lineHeight: 1.5,
+                lineHeight: 1.55,
                 marginBottom: 16,
               }}
             >
-              한 문제씩 꾸준히 풀어
-              <br />
-              연속 출석을 이어가세요.
+              {promotionOn ? (
+                <>
+                  이 시간에 알림 → 던전 1개 클리어 →
+                  <br />
+                  매일 토스 포인트 1~5원이 쌓여요
+                </>
+              ) : (
+                <>
+                  한 문제씩 꾸준히 풀어
+                  <br />
+                  연속 출석을 이어가세요.
+                </>
+              )}
             </div>
             <div
               style={{
@@ -148,7 +164,11 @@ export function NotificationPromptOverlay({
                 marginBottom: 8,
               }}
             >
-              {submitting ? "등록 중..." : "등록하고 계속 도전!"}
+              {submitting
+                ? "등록 중..."
+                : promotionOn
+                  ? "지금 시작하기"
+                  : "등록하고 계속 도전!"}
             </button>
             <button
               type="button"

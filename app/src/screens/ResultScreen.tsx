@@ -424,7 +424,9 @@ export function ResultScreen() {
               color="primary"
               onClick={handleShare}
             >
-              {cleared ? "🎁 친구에게 자랑하기" : "🎁 친구에게 도전장"}
+              {cleared
+                ? `💪 ${score}점 자랑하기`
+                : "📩 친구한테 이 문제 보내기"}
             </Button>
           ) : null}
           <div style={{ display: "flex", gap: 10 }}>
