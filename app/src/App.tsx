@@ -7,7 +7,6 @@ import { isPromotionEnabled } from "./lib/promotion";
 import { BattleScreen } from "./screens/BattleScreen";
 import { ChapterMapScreen } from "./screens/ChapterMapScreen";
 import { HomeScreen } from "./screens/HomeScreen";
-import { OnboardingScreen } from "./screens/OnboardingScreen";
 import { ResultScreen } from "./screens/ResultScreen";
 import { RunnerScreen } from "./screens/RunnerScreen";
 import { SettingsScreen } from "./screens/SettingsScreen";
@@ -15,7 +14,8 @@ import { StageScreen } from "./screens/StageScreen";
 import { useAppStore } from "./store/useAppStore";
 import { useAuthStore } from "./store/useAuthStore";
 import { useMissionStore } from "./store/useMissionStore";
-import { useOnboardingStore } from "./store/useOnboardingStore";
+import { useNotificationStore } from "./store/useNotificationStore";
+import { useReminderStore } from "./store/useReminderStore";
 import "./App.css";
 
 const REMINDER_API_BASE = (
@@ -95,8 +95,6 @@ function App() {
   const authStatus = useAuthStore((s) => s.status);
   const authHash = useAuthStore((s) => s.hash);
   const authInit = useAuthStore((s) => s.init);
-  const onboardingDone = useOnboardingStore((s) => s.completed);
-  const completeOnboarding = useOnboardingStore((s) => s.complete);
   const setName = useAuthStore((s) => s.setName);
   const mappingCheckedRef = useRef(false);
   const missionFetchedRef = useRef(false);
@@ -105,9 +103,11 @@ function App() {
     authInit();
   }, [authInit]);
 
-  // hash 로드 후 서버 매핑 상태에 따라 분기 (1회만).
-  // - onboarding 미완료 + isMapped → 자동 완료 (다른 deeplink/스킴에서 진입한 경우)
-  // - onboarding 완료 + !isMapped → silent appLogin 으로 재매핑 (cron 이 4010 받아 stale 처리한 키)
+  // hash 로드 후 서버 매핑 상태에 따라 처리 (세션당 1회).
+  // - 매핑 있음: 저장된 name 만 클라 store 로 hydrate
+  // - 매핑 없음: silent appLogin 으로 재매핑 시도 (cron 이 4010 받아 stale 처리한 키 회복)
+  //   ※ 첫 진입 사용자는 등록 자체를 안 했으므로 여기선 시도 안 함.
+  //     첫 알림 등록은 결과화면 NotificationPromptOverlay 에서 처리.
   useEffect(() => {
     if (!authHash) return;
     if (mappingCheckedRef.current) return;
@@ -117,18 +117,23 @@ function App() {
       const status = await checkServerMapping(authHash);
       if (cancelled) return;
       if (status.name) setName(status.name);
-      if (!onboardingDone && status.isMapped) {
-        completeOnboarding();
-      } else if (onboardingDone && !status.isMapped) {
-        const recoveredName = await recoverMapping(authHash);
-        if (cancelled) return;
-        if (recoveredName) setName(recoveredName);
+      // 매핑 없음 + 이전 등록 흔적 있음 = stale → silent 복구.
+      // 첫 진입 미등록 사용자에게는 토스 OAuth 띄우지 않음.
+      if (!status.isMapped) {
+        const wasRegistered =
+          useNotificationStore.getState().status === "registered" ||
+          useReminderStore.getState().enabled;
+        if (wasRegistered) {
+          const recoveredName = await recoverMapping(authHash);
+          if (cancelled) return;
+          if (recoveredName) setName(recoveredName);
+        }
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [authHash, onboardingDone, completeOnboarding, setName]);
+  }, [authHash, setName]);
 
   // hash 로드 후 일일 미션 상태 동기화 (세션당 1회).
   // 프로모션 비활성 (reward_id 미설정) 이면 호출 자체 스킵.
@@ -148,11 +153,6 @@ function App() {
 
   if (showSplash) {
     return <AuthSplash />;
-  }
-
-  // 온보딩 미완료면 온보딩 → 그 외 메인 라우터.
-  if (!onboardingDone) {
-    return <OnboardingScreen />;
   }
 
   return (
