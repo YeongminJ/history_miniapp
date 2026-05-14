@@ -1,5 +1,5 @@
 import { Button, Top } from "@toss/tds-mobile";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRedeemPoints } from "../hooks/useRedeemPoints";
 import { isDevMode } from "../lib/devMode";
 import { isPromotionEnabled } from "../lib/promotion";
@@ -13,7 +13,13 @@ import { useProgressStore } from "../store/useProgressStore";
 const RESET_LOCAL_KEYS = [
   "history-king-onboarding-v1",
   "history-king-reminder-v1",
+  "history-king-mission-v1",
+  "history-king-mission-v2",
+  "history-king-notification-v1",
 ];
+
+const HIDDEN_RESET_CLICK_THRESHOLD = 7;
+const HIDDEN_RESET_CLICK_WINDOW_MS = 3000;
 
 const REMINDER_API_BASE = (
   (import.meta.env.VITE_REMINDER_API_BASE as string | undefined) ?? ""
@@ -64,6 +70,37 @@ export function HomeScreen() {
   const showMission = isPromotionEnabled();
   const [resetting, setResetting] = useState(false);
   const { redeeming, redeem: handleHomeRedeem } = useRedeemPoints("home");
+  const crownClickCountRef = useRef(0);
+  const crownClickTimerRef = useRef<number | null>(null);
+
+  const handleCrownTap = () => {
+    crownClickCountRef.current += 1;
+    if (crownClickTimerRef.current) {
+      window.clearTimeout(crownClickTimerRef.current);
+    }
+    crownClickTimerRef.current = window.setTimeout(() => {
+      crownClickCountRef.current = 0;
+    }, HIDDEN_RESET_CLICK_WINDOW_MS);
+
+    if (crownClickCountRef.current >= HIDDEN_RESET_CLICK_THRESHOLD) {
+      crownClickCountRef.current = 0;
+      if (crownClickTimerRef.current) {
+        window.clearTimeout(crownClickTimerRef.current);
+        crownClickTimerRef.current = null;
+      }
+      if (resetting) return;
+      const ok = window.confirm(
+        "🔧 히든 리셋\n온보딩·알림·미션·서버 매핑을 모두 초기화하고 새로고침합니다. 계속할까요?",
+      );
+      if (!ok) return;
+      setResetting(true);
+      trackClick("hidden_reset_triggered", { hash: authHash });
+      void performDevReset(authHash).catch((err) => {
+        console.error("[hidden-reset]", err);
+        setResetting(false);
+      });
+    }
+  };
 
   const accuracy =
     totalPlayed > 0 ? Math.round((totalCorrect / totalPlayed) * 100) : 0;
@@ -79,7 +116,21 @@ export function HomeScreen() {
   return (
     <div style={{ paddingBottom: 120 }}>
       <Top
-        title={<Top.TitleParagraph size={28}>내가역사왕 👑</Top.TitleParagraph>}
+        title={
+          <Top.TitleParagraph size={28}>
+            내가역사왕{" "}
+            <span
+              onClick={handleCrownTap}
+              style={{
+                cursor: "default",
+                userSelect: "none",
+                WebkitUserSelect: "none",
+              }}
+            >
+              👑
+            </span>
+          </Top.TitleParagraph>
+        }
         subtitleBottom={
           <Top.SubtitleParagraph size={17}>
             역사 속 인물을 만나 던전을 정복하세요
