@@ -8,7 +8,10 @@ import { trackClick, trackScreen } from "../lib/track";
 import { useAppStore } from "../store/useAppStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { REDEEM_THRESHOLD, useMissionStore } from "../store/useMissionStore";
+import { useNotificationStore } from "../store/useNotificationStore";
+import { useOnboardingStore } from "../store/useOnboardingStore";
 import { useProgressStore } from "../store/useProgressStore";
+import { useReminderStore } from "../store/useReminderStore";
 
 const RESET_LOCAL_KEYS = [
   "history-king-onboarding-v1",
@@ -37,11 +40,10 @@ async function performDevReset(hash: string | null): Promise<void> {
       console.warn("[dev-reset] server delete failed", err);
     }
   } else if (hash) {
-    // 호환: REMINDER_API_BASE 없는 환경에서는 일반 deleteReminder 호출
     await deleteReminder(hash);
   }
 
-  // 2) 로컬 스토리지: 온보딩·리마인더 키 제거
+  // 2) 로컬 스토리지: 알려진 키 + history-king-* 패턴 전부 제거
   for (const k of RESET_LOCAL_KEYS) {
     try {
       localStorage.removeItem(k);
@@ -49,9 +51,50 @@ async function performDevReset(hash: string | null): Promise<void> {
       /* ignore */
     }
   }
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("history-king-")) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch {
+    /* ignore */
+  }
 
-  // 3) 새로 mount 시키기 위해 페이지 리로드
-  window.location.reload();
+  // 3) 메모리 zustand store 도 직접 reset.
+  //   토스 미니앱 webview 에서 window.location.reload() 가 무시되는 경우가 있어
+  //   reload 안 일어나도 다음 사용자 액션 (알림 토글 등) 이 곧바로 동작하도록.
+  try {
+    useReminderStore.setState({
+      enabled: false,
+      hour: 21,
+      minute: 0,
+      syncStatus: "idle",
+      syncMessage: null,
+    });
+    useMissionStore.setState({
+      pendingPoints: 0,
+      currentStreak: 0,
+      claimedTypes: [],
+      todayClearCount: 0,
+      lastSyncDate: null,
+    });
+    useNotificationStore.getState().reset();
+    useOnboardingStore.getState().reset();
+    useAuthStore.getState().setName(null);
+    useAppStore.getState().goHome();
+  } catch (err) {
+    console.warn("[dev-reset] store reset failed", err);
+  }
+
+  // 4) reload 시도 — 가능하면 깨끗하게 다시 mount. webview 에서 무시돼도
+  //   위 메모리 reset 으로 사용자에게 즉시 반영됨.
+  try {
+    window.location.reload();
+  } catch {
+    /* ignore */
+  }
 }
 
 export function HomeScreen() {
