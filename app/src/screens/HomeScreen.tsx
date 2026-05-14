@@ -247,26 +247,47 @@ function MissionTodayCard({
   const ready = pendingPoints >= REDEEM_THRESHOLD;
   const progress = Math.min(pendingPoints, REDEEM_THRESHOLD);
   const already = new Set(claimedTypes);
-  const dailyClaimedCount =
-    Number(already.has("daily_1")) +
-    Number(already.has("daily_3")) +
-    Number(already.has("daily_5"));
-  const nextStreakMilestone =
-    currentStreak < 3
-      ? 3
-      : currentStreak < 7
-        ? 7
-        : currentStreak < 30
-          ? 30
-          : null;
-  const nextDailyGoal =
-    todayClearCount < 1
-      ? "1판 클리어"
-      : todayClearCount < 3
-        ? `3판까지 ${3 - todayClearCount}판`
-        : todayClearCount < 5
-          ? `5판까지 ${5 - todayClearCount}판`
-          : null;
+
+  interface Row {
+    done: boolean;
+    label: string;
+    progress?: string;
+  }
+  const rows: Row[] = [
+    {
+      done: already.has("daily_1"),
+      label: "오늘 첫 클리어 (+1~5원)",
+    },
+    {
+      done: already.has("daily_3"),
+      label: "오늘 3판 클리어 (+2원)",
+      progress: `${Math.min(todayClearCount, 3)}/3`,
+    },
+    {
+      done: already.has("daily_5"),
+      label: "오늘 5판 클리어 (+3원)",
+      progress: `${Math.min(todayClearCount, 5)}/5`,
+    },
+    {
+      done: already.has("combo_10"),
+      label: "10연속 정답 (+1원)",
+    },
+    {
+      done: already.has("streak_3"),
+      label: "3일 연속 출석 (+2원)",
+      progress: `${Math.min(currentStreak, 3)}/3`,
+    },
+    {
+      done: already.has("streak_7"),
+      label: "7일 연속 출석 (+5원)",
+      progress: `${Math.min(currentStreak, 7)}/7`,
+    },
+    {
+      done: already.has("streak_30"),
+      label: "30일 연속 출석 (+10원)",
+      progress: `${Math.min(currentStreak, 30)}/30`,
+    },
+  ];
 
   return (
     <div
@@ -290,34 +311,53 @@ function MissionTodayCard({
         }}
       >
         <div style={{ fontSize: 13, fontWeight: 700, color: "#5D4037" }}>
-          🎯 오늘의 미션 ({dailyClaimedCount}/3)
+          🎯 오늘의 미션
           {currentStreak > 0 ? ` · 🔥 ${currentStreak}일 연속` : ""}
         </div>
         <div style={{ fontSize: 12, color: "#8D6E63", fontWeight: 600 }}>
           누적 {progress} / {REDEEM_THRESHOLD}원
         </div>
       </div>
-      <div
-        style={{
-          fontSize: 13,
-          color: ready ? "#E65100" : "#616161",
-          fontWeight: ready ? 700 : 400,
-          marginBottom: 10,
-          lineHeight: 1.55,
-        }}
-      >
-        {ready
-          ? `💎 ${pendingPoints}원 모였어요! 광고 보고 토스 포인트로 받을 수 있어요`
-          : nextDailyGoal
-            ? `· ${nextDailyGoal} 더 클리어하면 보상 적립`
-            : "✓ 오늘 일일 미션 완료!"}
-        {nextStreakMilestone && !ready ? (
-          <>
-            <br />· 🔥 {nextStreakMilestone}일 연속 출석까지{" "}
-            {nextStreakMilestone - currentStreak}일
-          </>
-        ) : null}
-      </div>
+      {ready ? (
+        <div
+          style={{
+            fontSize: 13,
+            color: "#E65100",
+            fontWeight: 700,
+            marginBottom: 10,
+            lineHeight: 1.55,
+          }}
+        >
+          💎 {pendingPoints}원 모였어요! 광고 보고 토스 포인트로 받을 수 있어요
+        </div>
+      ) : (
+        <div style={{ marginBottom: 10 }}>
+          {rows.map((r, i) => (
+            <div
+              key={i}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                fontSize: 12,
+                color: r.done ? "#9E9E9E" : "#5D4037",
+                fontWeight: r.done ? 500 : 600,
+                padding: "3px 0",
+                textDecoration: r.done ? "line-through" : "none",
+              }}
+            >
+              <span>
+                {r.done ? "✓" : "☐"} {r.label}
+              </span>
+              {r.progress ? (
+                <span style={{ fontSize: 11, color: "#8D6E63" }}>
+                  {r.progress}
+                </span>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      )}
       <div
         style={{
           height: 6,
